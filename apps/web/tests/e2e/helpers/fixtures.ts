@@ -64,7 +64,7 @@ export const mockRecipes = [
     title: 'Pasta Primavera',
     diet: 'vegetarian',
     ingredients: [{ name: 'pasta', quantity: '200g' }, { name: 'zucchini', quantity: '1' }],
-    steps: ['Boil pasta', 'Saute zucchini', 'Combine'],
+    steps: ['Boil pasta', 'Sauté zucchini', 'Combine'],
     nutrition_per_serving: { calories: 420, protein: 12, carbs: 65, fat: 10 },
   },
   {
