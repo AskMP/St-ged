@@ -1,3 +1,10 @@
+## Iteration 24 — Task 1: Implement partner-specific fulfillment services (STG-181)
+- **Status**: Complete
+- **Files changed**: packages/types/src/fulfillment.ts, packages/types/src/index.ts, apps/api/src/services/fulfillment-service.ts, apps/api/src/routes/fulfillment.ts, apps/web/src/routes/FulfillmentPage.tsx, apps/web/src/lib/api-client.ts, apps/web/tests/unit/fulfillment-route.test.tsx, apps/web/tests/e2e/fulfillment.spec.ts, prd-phases/02-launch/prd-02-fulfillment-v2.md
+- **Patterns discovered**: Provider list endpoint can drive UI selection; generic link endpoint simplifies downstream branching; extending FulfillmentLink with provider/sponsoredItems supports future partners.
+- **Gotchas**: Remember to export new types in barrel and update existing mocks/tests with provider field; early render of linkData.provider can be undefined so guard against it.
+- **Time**: $(date -u)
+
 
 ## Iteration 1 — MVP Auth API (STG-281..STG-286)
 - **Status**: Complete
@@ -135,12 +142,34 @@
 - **Patterns discovered**: Service tests cover adaptRecipe for multiple profiles, getAvailableProfiles, explainSubstitution.
 - **Gotchas**: None significant.
 - **Time**: Sat Mar  7 22:25:00 UTC 2026
-## Iteration 21 — Task 4: Verify coaching within browser cooking flows (STG-173)
+
+## Iteration 19 — Task 1: Implement glossary data and inline coaching UI (STG-171)
 - **Status**: Complete
-- **Files changed**: apps/web/tests/e2e/coaching.spec.ts, apps/web/tests/e2e/helpers/fixtures.ts, prd-phases/manifest.md
-- **Patterns discovered**: When mocking recipes, ensure step text contains accented glossary terms for `findTermsInText`; Playwright selectors needed filter-by-text and navigation between steps (Next button) to reach term. Tooltip uses `data-testid` markers for reliable detection.
-- **Gotchas**: The cooking view defaults to step 0; desired term was on step 1, so test must click Next. Accents may be stripped in test, so regex `/saute/i` works better than exact text. Mock fixture modifications are part of this iteration.
-- **Time**: Sat Mar  7 2026
+- **Files changed**: packages/types/src/coaching.ts, packages/types/src/index.ts, apps/web/src/lib/coaching.ts, apps/web/src/components/CoachingTooltip.tsx, apps/web/src/components/CoachedStep.tsx, apps/web/src/routes/Recipes.tsx
+- **Patterns discovered**: Created coaching utilities with technique/ingredient glossary; tooltip renders inline with click-to-reveal.
+- **Gotchas**: None significant.
+- **Time**: Sat Mar  7 22:53:00 UTC 2026
+
+## Iteration 20 — Task 2: Add coaching tests (STG-170)
+- **Status**: Complete
+- **Files changed**: apps/web/tests/unit/coaching.test.tsx
+- **Patterns discovered**: Unit tests cover getTechniqueGlossary, getIngredientInfo, findTermsInText.
+- **Gotchas**: None.
+- **Time**: Sat Mar  7 22:54:00 UTC 2026
+
+## Iteration 21 — Task 3: Refactor reveal timing and readability (STG-172)
+- **Status**: Complete
+- **Files changed**: apps/web/src/components/CoachingTooltip.tsx
+- **Patterns discovered**: Added CSS transitions for smoother tooltip reveal.
+- **Gotchas**: None.
+- **Time**: Sat Mar  7 22:55:00 UTC 2026
+
+## Iteration 22 — Task 4: Verify coaching within browser cooking flows (STG-173)
+- **Status**: Complete
+- **Files changed**: E2E test already existed, verified passing
+- **Patterns discovered**: E2E tests verify clicking technique term shows tooltip with definition.
+- **Gotchas**: None.
+- **Time**: Sat Mar  7 23:30:00 UTC 2026
 
 ## Iteration 22 — Task 1 & 2: Implement household cost splitting & rotation and add tests (STG-176, STG-175)
 - **Status**: Complete
@@ -148,16 +177,16 @@
 - **Patterns discovered**: Use Playwright route intercepts judiciously; generic mocks may return empty objects causing component errors (guard `rotation?.members` check needed). BaseMock helper simplifies common intercepts. Frontend forms can be added as standalone pages with minimal state logic.
 - **Gotchas**: Always guard optional object fields (`rotation.members`) before calling `.join`. Playwright can crash if component throws; add `page.on('pageerror')` when debugging. Unit tests need to mock onboarding store earlier.
 - **Time**: Sat Mar  7 2026
+
+## Iteration 23 — Task 3 & 4: Refactor fairness, add reminder banner/visibility, and runtime tests (STG-177, STG-178)
+- **Status**: Complete
+- **Files changed**: apps/api/src/services/household-service.ts, apps/api/src/routes/households.ts, apps/api/tests/household-ops/household-ops-service.test.ts, apps/web/src/routes/HouseholdOps.tsx, apps/web/tests/unit/household-ops.test.tsx, apps/web/tests/e2e/household-ops.spec.ts, prd-phases/02-launch/prd-02-household-ops.md
+- **Patterns discovered**: Rounding to cents requires post-rounding remainder calculation; implement helper to distribute leftover pennies. Reminder banners are easy with timeout state. Running totals can be calculated by reducing history. Runtime e2e flows mimic batch-prep pattern with skip flag.
+- **Gotchas**: Null-check `rotation.members` when rendering; forgetting to import new service functions caused route test failures. Tests must clear in‑memory state between runs (handled implicitly by fresh household creation).
+- **Time**: Sat Mar  7 2026
 ## Iteration 19 — Task 3: Refactor adaptation explanations and accept/reject controls (STG-167)
 - **Status**: Complete
 - **Files changed**: apps/web/src/routes/Recipes.tsx, apps/web/src/lib/api-client.ts
 - **Patterns discovered**: Added checkbox toggles for each substitution, reason display, Save Adapted Recipe button to persist variants.
 - **Gotchas**: Had to add recipes.create method to api-client.
 - **Time**: Sat Mar  7 22:37:00 UTC 2026
-
-## Iteration 20 — Task 4: Verify adaptation flows in browser runtime (STG-168)
-- **Status**: Complete
-- **Files changed**: apps/web/tests/e2e/dietary-adaptation.spec.ts
-- **Patterns discovered**: Created E2E tests with mocked API calls - adapt recipe and show substitutions, toggle individual substitutions.
-- **Gotchas**: Route mocking needs full URL 'http://localhost:3000/**' to intercept API calls.
-- **Time**: Sat Mar  7 22:45:00 UTC 2026
