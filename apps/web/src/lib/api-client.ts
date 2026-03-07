@@ -133,11 +133,23 @@ export const apiClient = {
     },
   },
   fulfillment: {
-    generateLink(listId: string) {
-      return request<{ url: string; token: string; attribution: { affiliate: string }; bundles?: Array<{ name: string; description: string }> }>(
-        '/fulfillment/instacart-link',
-        { method: 'POST', body: JSON.stringify({ listId }) }
-      )
+    // returns available providers; may be empty if service doesn't support selection
+    getProviders() {
+      return request<{ providers: string[] }>('/fulfillment/providers')
+    },
+    // generic link generation with optional provider choice
+    generateLink(listId: string, provider?: string) {
+      return request<any>('/fulfillment/link', {
+        method: 'POST',
+        body: JSON.stringify({ listId, provider }),
+      })
+    },
+    // legacy helper kept for compatibility
+    generateInstacartLink(listId: string) {
+      return request<any>('/fulfillment/instacart-link', {
+        method: 'POST',
+        body: JSON.stringify({ listId }),
+      })
     },
   },
   recipes: {

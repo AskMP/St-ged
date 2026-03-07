@@ -5,12 +5,22 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Fulfillment page', () => {
   test.beforeEach(async ({ page }) => {
-    // Intercept the instacart-link API call
-    await page.route('**/fulfillment/instacart-link', (route) => {
+    // Intercept the providers list
+    await page.route('**/fulfillment/providers', (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ providers: ['instacart'] }),
+      })
+    })
+
+    // Intercept the generic link API call
+    await page.route('**/fulfillment/link', (route) => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
+          provider: 'instacart',
           url: 'https://www.instacart.com/store/1234/cart?affiliate_id=affiliate-test&items=pasta',
           token: 'tok-e2e',
           attribution: { affiliate: 'affiliate-test' },

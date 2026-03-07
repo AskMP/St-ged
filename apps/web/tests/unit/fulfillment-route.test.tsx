@@ -8,16 +8,21 @@ vi.mock('../../src/lib/api-client', () => ({
   apiClient: {
     fulfillment: {
       generateLink: vi.fn(),
+      getProviders: vi.fn(),
     },
   },
 }))
 
 const mockLinkData = {
+  provider: 'instacart',
   url: 'https://www.instacart.com/store/1234/cart?affiliate_id=test&items=pasta',
   token: 'tok-abc',
   attribution: { affiliate: 'affiliate-test' },
   bundles: [
     { name: 'Premium Spices Pack', description: 'Add gourmet spices for 5% off' },
+  ],
+  sponsoredItems: [
+    { name: 'Organic Honey', brand: 'ChicoryFarm', price: 6.99 },
   ],
 }
 
@@ -34,6 +39,7 @@ function renderFulfillment(search = '?listId=list-1') {
 
 beforeEach(() => {
   vi.mocked(apiClient.apiClient.fulfillment.generateLink).mockResolvedValue(mockLinkData)
+  vi.mocked(apiClient.apiClient.fulfillment.getProviders).mockResolvedValue({ providers: ['instacart'] })
 })
 
 describe('FulfillmentPage', () => {
@@ -105,7 +111,7 @@ describe('FulfillmentPage', () => {
   it('calls generateLink with the correct listId', async () => {
     renderFulfillment('?listId=my-list-42')
     await waitFor(() => {
-      expect(apiClient.apiClient.fulfillment.generateLink).toHaveBeenCalledWith('my-list-42')
+      expect(apiClient.apiClient.fulfillment.generateLink).toHaveBeenCalledWith('my-list-42', 'instacart')
     })
   })
 })

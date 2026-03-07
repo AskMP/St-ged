@@ -1,39 +1,53 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { apiClient } from '../lib/api-client'
+import type { FulfillmentLink, FulfillmentProvider, SponsoredItem } from '@staged/types'
 
 interface Bundle {
   name: string
   description: string
 }
 
-interface FulfillmentLink {
-  url: string
-  token: string
-  attribution: { affiliate: string }
-  bundles?: Bundle[]
-}
-
 export default function FulfillmentPage() {
   const [searchParams] = useSearchParams()
   const listId = searchParams.get('listId')
+
+  const [providers, setProviders] = useState<FulfillmentProvider[]>([])
+  const [selectedProvider, setSelectedProvider] = useState<FulfillmentProvider>('instacart')
 
   const [linkData, setLinkData] = useState<FulfillmentLink | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // fetch available providers once
+  useEffect(() => {
+    if (!listId) return
+    apiClient.fulfillment
+      .getProviders()
+      .then((res) => {
+        setProviders(res.providers)
+        if (res.providers.includes('instacart')) {
+          setSelectedProvider('instacart')
+        }
+      })
+      .catch(() => {
+        // ignore; providers list is optional
+      })
+  }, [listId])
+
+  // whenever listId or selectedProvider changes, regenerate link
   useEffect(() => {
     if (!listId) return
     setLoading(true)
     setError(null)
     apiClient.fulfillment
-      .generateLink(listId)
+      .generateLink(listId, selectedProvider)
       .then((data) => setLinkData(data))
       .catch((err: unknown) =>
         setError(err instanceof Error ? err.message : 'Failed to generate link')
       )
       .finally(() => setLoading(false))
-  }, [listId])
+  }, [listId, selectedProvider])
 
   return (
     <div data-testid="fulfillment-page" className="max-w-lg mx-auto py-8 px-4">
@@ -59,6 +73,29 @@ export default function FulfillmentPage() {
         <strong>Affiliate disclosure:</strong> Staged earns a small commission on qualifying
         Instacart orders placed through this link. Your price is the same.
       </div>
+
+      {/* Provider selector */}
+      {providers.length > 0 && (
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-stone-700 mb-1">
+            Order with
+          </label>
+          <select
+            data-testid="provider-select"
+            value={selectedProvider}
+            onChange={(e) =>
+              setSelectedProvider(e.target.value as FulfillmentProvider)
+            }
+            className="mt-1 block w-full rounded-md border-stone-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+          >
+            {providers.map((p) => (
+              <option key={p} value={p}>
+                {p.replace('-', ' ')}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* No list selected */}
       {!listId && (
@@ -131,6 +168,27 @@ export default function FulfillmentPage() {
             Affiliate ID: {linkData.attribution.affiliate}
           </div>
 
+          {/* Sponsored placements (Chicory) */}
+          {linkData.sponsoredItems && linkData.sponsoredItems.length > 0 && (
+            <div className="mb-6">
+              <h2 className="text-sm font-semibold text-stone-700 mb-2">
+                Sponsored items
+              </h2>
+              <ul className="space-y-2" data-testid="sponsored-list">
+                {linkData.sponsoredItems.map((item) => (
+                  <li
+                    key={item.name + item.brand}
+                    className="p-2 bg-yellow-50 border border-yellow-200 rounded"
+                  >
+                    <p className="text-sm font-medium text-yellow-800">
+                      {item.name} ({item.brand}) - ${item.price.toFixed(2)}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {/* CTA */}
           <a
             data-testid="instacart-cta"
@@ -139,10 +197,10 @@ export default function FulfillmentPage() {
             rel="noopener noreferrer"
             className="block w-full py-4 rounded-xl bg-green-600 text-white font-semibold text-center text-lg hover:bg-green-700 active:scale-95 transition-transform"
           >
-            Order on Instacart
+            Order with {linkData.provider.replace('-', ' ')}
           </a>
           <p className="text-center text-xs text-stone-400 mt-2">
-            Opens Instacart in a new tab
+            Opens {linkData.provider.replace('-', ' ')} in a new tab
           </p>
         </>
       )}

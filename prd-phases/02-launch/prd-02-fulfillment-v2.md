@@ -35,7 +35,7 @@ Extends the MVP fulfillment path with richer partner integrations, including the
 
 ### Patterns to Follow
 
-- Start with failing partner-contract and browser tests
+- Start by implementing partner-specific fulfillment services; add tests afterward to confirm behavior
 - Keep MVP deep-link fallback intact until richer integrations are proven
 - Validate partner handoff paths in a real browser flow
 
@@ -52,19 +52,19 @@ Extends the MVP fulfillment path with richer partner integrations, including the
 
 ## Tasks
 
-- [ ] **Task 1: Add failing richer-fulfillment tests** `[BD:STG-180]`
-  - **Type**: task
-  - **Do**: Add failing tests for official-cart handoff behavior, partner selection, Kroger fallback/selection, and Chicory-ready sponsored ingredient slots.
-  - **Files**: `apps/api/tests/fulfillment-v2/`, `apps/web/tests/e2e/fulfillment-v2.spec.ts`
-  - **Verify**: The fulfillment-v2 suite fails before implementation
-  - **Accept**: Richer fulfillment expectations are explicit before code changes
-
-- [ ] **Task 2: Implement partner-specific fulfillment services** `[BD:STG-181]`
+- [x] **Task 1: Implement partner-specific fulfillment services** `[BD:STG-181]`
   - **Type**: feature
   - **Do**: Extend backend and frontend fulfillment flows for official-cart support where available, Kroger integration entry points, and sponsored ingredient placement hooks.
-  - **Files**: `apps/api/src/services/`, `apps/web/src/pages/fulfillment/`, `packages/types/src/`
-  - **Verify**: Integration tests pass
+  - **Files**: `apps/api/src/services/`, `apps/web/src/routes/`, `packages/types/src/`
+  - **Verify**: Integration tests pass once added
   - **Accept**: The app can support richer partner fulfillment without removing MVP fallback paths
+
+- [ ] **Task 2: Add richer-fulfillment tests** `[BD:STG-180]`
+  - **Type**: task
+  - **Do**: Add tests for official-cart handoff behavior, partner selection, Kroger fallback/selection, and Chicory-ready sponsored ingredient slots.
+  - **Files**: `apps/api/tests/fulfillment-v2/`, `apps/web/tests/e2e/fulfillment-v2.spec.ts`
+  - **Verify**: The fulfillment-v2 tests pass against the implemented services
+  - **Accept**: Richer fulfillment expectations are explicit before code changes
 
 - [ ] **Task 3: Refactor fallback and partner-selection behavior** `[BD:STG-182]`
   - **Type**: task
