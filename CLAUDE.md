@@ -15,27 +15,27 @@ For non-Claude agents, see `AGENTS.md` — it contains the complete project conf
 
 ## Tech Stack
 
-| Technology | Version | Purpose |
-|-----------|---------|---------|
-| React | 19 | Frontend UI (PWA) |
-| Vite + vite-plugin-pwa | 6+ | Frontend build + Service Worker + Web App Manifest |
-| Workbox | 7+ | Service Worker caching strategies (SWR, Cache-First, Network-First) |
-| Dexie.js | 4+ | IndexedDB ORM — offline recipe/list/pantry storage + sync queue |
-| Zustand | 5+ | Client state management (lightweight; pairs well with Dexie) |
-| React Router | 7 | Client-side routing |
-| Tailwind CSS | v4 | Utility-first styling |
-| Radix UI | latest | Accessible, unstyled UI primitives |
-| Hono | 4+ | TypeScript-native HTTP server (API) |
-| Socket.io | 4+ | WebSocket real-time sync — one room per household |
-| Node.js | 22 LTS | API runtime |
-| PostgreSQL | 16 | Primary database (hosted on Supabase) |
-| Drizzle ORM | latest | TypeScript-first ORM + migrations; no code generation step |
-| Better Auth | latest | Self-hosted auth: email/password, magic link, OAuth (Google/Apple), guest sessions |
-| Turborepo | latest | Monorepo task orchestration + caching |
-| pnpm | 9+ | Package manager (workspaces) |
-| Vitest | 2+ | Unit + integration testing |
-| Playwright | latest | E2E browser testing |
-| Claude Haiku | claude-haiku-4-5 | LLM-as-parser: ingredient text -> USDA FDC ID mapping |
+| Technology             | Version          | Purpose                                                                            |
+| ---------------------- | ---------------- | ---------------------------------------------------------------------------------- |
+| React                  | 19               | Frontend UI (PWA)                                                                  |
+| Vite + vite-plugin-pwa | 6+               | Frontend build + Service Worker + Web App Manifest                                 |
+| Workbox                | 7+               | Service Worker caching strategies (SWR, Cache-First, Network-First)                |
+| Dexie.js               | 4+               | IndexedDB ORM — offline recipe/list/pantry storage + sync queue                    |
+| Zustand                | 5+               | Client state management (lightweight; pairs well with Dexie)                       |
+| React Router           | 7                | Client-side routing                                                                |
+| Tailwind CSS           | v4               | Utility-first styling                                                              |
+| Radix UI               | latest           | Accessible, unstyled UI primitives                                                 |
+| Hono                   | 4+               | TypeScript-native HTTP server (API)                                                |
+| Socket.io              | 4+               | WebSocket real-time sync — one room per household                                  |
+| Node.js                | 22 LTS           | API runtime                                                                        |
+| PostgreSQL             | 16               | Primary database (hosted on Supabase)                                              |
+| Drizzle ORM            | latest           | TypeScript-first ORM + migrations; no code generation step                         |
+| Auth.js (NextAuth v5)  | latest           | Self-hosted auth via @hono/auth-js: email/password, OAuth (Google/Apple), JWT sessions, guest sessions |
+| Turborepo              | latest           | Monorepo task orchestration + caching                                              |
+| pnpm                   | 9+               | Package manager (workspaces)                                                       |
+| Vitest                 | 2+               | Unit + integration testing                                                         |
+| Playwright             | latest           | E2E browser testing                                                                |
+| Claude Haiku           | claude-haiku-4-5 | LLM-as-parser: ingredient text -> USDA FDC ID mapping                              |
 
 ## Project Structure
 
@@ -143,12 +143,12 @@ pnpm --filter @staged/db generate
 
 ## Services
 
-| Service | Port | Purpose |
-|---------|------|---------|
-| Web PWA (Vite dev) | 5173 | React frontend + Service Worker |
-| API server (Hono) | 3000 | REST API + Socket.io WebSocket |
-| PostgreSQL (local dev) | 5432 | Primary database (Supabase in prod) |
-| Socket.io | ws://localhost:3000 | Real-time list/plan sync (per-household rooms) |
+| Service                | Port                | Purpose                                        |
+| ---------------------- | ------------------- | ---------------------------------------------- |
+| Web PWA (Vite dev)     | 5173                | React frontend + Service Worker                |
+| API server (Hono)      | 3000                | REST API + Socket.io WebSocket                 |
+| PostgreSQL (local dev) | 5432                | Primary database (Supabase in prod)            |
+| Socket.io              | ws://localhost:3000 | Real-time list/plan sync (per-household rooms) |
 
 ## Deployment
 
@@ -170,19 +170,19 @@ pnpm --filter @staged/db generate
 
 ALL task state flows through **bd (beads)**. NEVER use Claude's built-in TaskCreate / TaskUpdate / TaskList tools as substitutes -- those tools are invisible to the project's task history and will not create the audit trail needed for progress tracking, context recovery, and accountability.
 
-| Action | Command |
-|--------|---------|
-| Init task system | `bd init --prefix STG` |
-| Create task | `bd create -t task -d "DESC" "TITLE"` |
-| Create feature | `bd create -t feature -d "DESC" "Feature: TITLE"` |
-| Create bug | `bd create -t bug -p high -d "DESC" "Bug: TITLE"` |
-| List active | `bd list -s in_progress` |
-| List ready | `bd ready` |
-| Show task | `bd show TASK_ID` |
-| Set status | `bd update TASK_ID -s STATUS` |
-| Append notes | `bd update TASK_ID --append-notes "NOTE"` |
-| Set dependency | `bd dep OTHER_ID --blocks TASK_ID` |
-| Close task | `bd close TASK_ID` |
+| Action           | Command                                           |
+| ---------------- | ------------------------------------------------- |
+| Init task system | `bd init --prefix STG`                            |
+| Create task      | `bd create -t task -d "DESC" "TITLE"`             |
+| Create feature   | `bd create -t feature -d "DESC" "Feature: TITLE"` |
+| Create bug       | `bd create -t bug -p high -d "DESC" "Bug: TITLE"` |
+| List active      | `bd list -s in_progress`                          |
+| List ready       | `bd ready`                                        |
+| Show task        | `bd show TASK_ID`                                 |
+| Set status       | `bd update TASK_ID -s STATUS`                     |
+| Append notes     | `bd update TASK_ID --append-notes "NOTE"`         |
+| Set dependency   | `bd dep OTHER_ID --blocks TASK_ID`                |
+| Close task       | `bd close TASK_ID`                                |
 
 ## Agent Governance (Standard)
 
@@ -216,14 +216,18 @@ Governance rules are defined in the agent-governance skill. Key rules for agents
 @import .claude/skills/git-workflow/skill.md
 @import .claude/skills/task-management/skill.md
 @import .claude/skills/test-scaffolding/skill.md
+
 <!-- @import .claude/skills/coverage-analysis/skill.md -->
 <!-- @import .claude/skills/dependency-health/skill.md -->
 <!-- @import .claude/skills/task-audit/skill.md -->
+
 @import .claude/skills/ralph-loop/skill.md
+
 <!-- @import .claude/skills/mcp-catalog/skill.md -->
 <!-- @import .claude/skills/project-scaffold/skill.md -->
+
 @import .claude/skills/agent-governance/skill.md
-@import .claude/skills/frontend-design/SKILL.md
+@import .claude/skills/frontend-design/skill.md
 
 @import .claude/commands/pipeline-research.md
 @import .claude/commands/pipeline-plan.md
@@ -262,6 +266,7 @@ Governance rules are defined in the agent-governance skill. Key rules for agents
 
 @import .claude/agents/frontend.md
 @import .claude/agents/database.md
+
 <!-- @import .claude/agents/backend.md -->
 <!-- @import .claude/agents/qa-testing.md -->
 <!-- @import .claude/agents/devops.md -->
@@ -272,6 +277,7 @@ Governance rules are defined in the agent-governance skill. Key rules for agents
 
 ## Project-Specific Rules
 
+- **Railway deployment is post-MVP**: Do not attempt Railway deploys during development. All verification happens against `localhost:3000` (API) and `localhost:5173` (web). Railway deployment is gated on `01-verify-runtime` completing successfully -- the config files exist but are not to be used until then.
 - **Offline-first is non-negotiable**: Any feature that fails when Chrome DevTools Network is set to "Offline" is a blocker. Test offline mode before marking any feature complete.
 - **A2HS is a functional requirement**: The Add-to-Home-Screen prompt is NOT optional UX polish. iOS evicts non-installed PWA cache after 7 days. Prompt must appear in onboarding with clear benefit framing: "Add to Home Screen to keep your recipes available offline -- even without signal."
 - **No Background Sync API**: Not supported on iOS. All offline sync uses the foreground-flush pattern: optimistic local write -> IndexedDB SyncQueue entry -> flush on `online` event or `visibilitychange`. Never architect around Background Sync.

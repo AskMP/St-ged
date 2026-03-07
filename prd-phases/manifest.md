@@ -16,10 +16,10 @@ max_iterations: 100
 
 | Field | Value |
 |-------|-------|
-| Last completed PRD | -- |
-| Timestamp | -- |
+| Last completed PRD | 01-api-auth |
+| Timestamp | $(date -u "+%Y-%m-%d %H:%M:%S UTC") |
 | Current phase | 0 (Foundation) |
-| Progress | 0 / 29 PRDs complete |
+| Progress | 11 / 38 PRDs complete |
 
 ---
 
@@ -31,9 +31,37 @@ This manifest coordinates a multi-PRD build. Each PRD is a self-contained unit o
 
 1. Read this manifest
 2. Find the first `status: pending` entry in the PRD Registry whose `requires` are all `status: complete`
-3. Open that PRD file and execute its tasks sequentially
-4. The final task in every PRD updates this manifest (marks the entry `status: complete`)
-5. Return to step 2
+3. Before editing files, create or verify every embedded BD task in that PRD using `bd create --id <embedded-id> ...` so task IDs match the PRD exactly
+4. Open that PRD file and execute its tasks sequentially using a strict red/green/refactor loop
+5. The final task in every PRD updates this manifest (marks the entry `status: complete`)
+6. Return to step 2
+
+### Execution Guardrails
+
+Every PRD in this system is governed by the **Build-then-Verify** pattern. Do NOT interleave test writing with implementation -- complete the build phase fully before entering the verify phase.
+
+#### Phase 1 -- Build
+
+Implement the complete feature, module, or route set described in the PRD. Do not write or run tests during this phase. Do not pause to assess partial test coverage. Write real, working code against the full scope of the task.
+
+#### Phase 2 -- Verify
+
+After implementation is complete, write tests for the finished code. Tests should verify behavior that already exists, not guide implementation. Run the test suite once.
+
+#### Phase 3 -- Triage
+
+Fix any genuine failures found during verification. Failures mean "the implementation has a bug," not "the test was written before the code existed." If a test cannot pass because the feature was never built, the failure is a scope gap -- add a Discovered Task, do not iterate indefinitely.
+
+#### Standing Rules (apply to all phases)
+
+1. **Build before you test** -- never write a test for code that does not yet exist; finish the implementation first
+2. **Single verify pass** -- run the test suite once after implementation, not after every function; excessive re-runs indicate the build phase is incomplete
+3. **Real implementation tests required** -- mock-only tests are never sufficient; every feature must include at least one integration test that hits the real route, real component tree, real data layer, or real browser flow
+4. **Browser validation required for UI work** -- any user-facing route or component PRD must be verified in an actual browser via Playwright or manual browser execution; route rendering and navigation wiring must be proven, not assumed
+5. **Mobile/device validation when available** -- when `adb` and a connected device are available, run the relevant smoke flow on-device; if no device is connected or `adb` is unavailable, prompt the user to connect or expose the device tooling and continue with browser validation instead of blocking all work
+6. **Offline/PWA checks are mandatory** -- any offline-first, sync, install, or caching work must be verified in offline mode, with reconnect behavior and installability explicitly tested
+7. **Evidence must be captured** -- record commands, failures, fixes, browser/device validation notes, and follow-up gaps in `bd` notes as work proceeds
+8. **Stop-on-spin guardrail** -- if three consecutive verify iterations still fail on the same issue, stop, add a Discovered Task or blocked note, and move on; do not spiral
 
 ### Reference Table
 
@@ -43,7 +71,7 @@ This manifest coordinates a multi-PRD build. Each PRD is a self-contained unit o
 | Execute specific PRD | `/ralph prd-phases/<group>/<file>.md` |
 | Generate new PRD | `/prd-generate --manifest` |
 | Check progress | Read this manifest's Current State + PRD Registry |
-| Create tracked tasks | `bd create -t task -d "DESC" "TITLE"` |
+| Create tracked tasks | `bd create --id STG-123 -t task -d "DESC" "TITLE"` |
 
 ### Problem-Solving Protocol
 
@@ -60,7 +88,7 @@ When a task fails or a blocker is discovered:
 PRDs with `parallel_safe: true` and all `requires` satisfied may be executed concurrently by independent agents. Rules:
 
 - Never run two PRDs that modify the same files simultaneously
-- Each parallel agent gets its own branch: `stg-<prd_id>`
+- Each parallel agent gets its own branch using the active BD task ID plus a PRD slug, for example: `stg-STG-123/01-data-schema`
 - Merge sequentially in registry order after completion
 - If a merge conflict arises, the later PRD resolves it
 
@@ -70,43 +98,45 @@ PRDs with `parallel_safe: true` and all `requires` satisfied may be executed con
 
 ### Group 0: Foundation
 
-- [ ] **00a** | `prd-phases/00-foundation/prd-00a-task-management.md` | Task management setup (bd init + verification) | status: pending | requires: none |
-- [ ] **00b** | `prd-phases/00-foundation/prd-00b-project-init.md` | Turborepo monorepo init, workspace config, dev servers | status: pending | requires: 00a |
-- [ ] **00c** | `prd-phases/00-foundation/prd-00c-code-quality.md` | ESLint, Prettier, Husky, lint-staged, TypeScript strict | status: pending | requires: 00b |
-- [ ] **00d** | `prd-phases/00-foundation/prd-00d-database.md` | PostgreSQL + Drizzle schema + migrations + Better Auth + USDA FDC dataset | status: pending | requires: 00b |
-- [ ] **00e** | `prd-phases/00-foundation/prd-00e-api-foundation.md` | Hono server + Socket.io setup + route skeleton + env validation | status: pending | requires: 00d |
-- [ ] **00f** | `prd-phases/00-foundation/prd-00f-styling.md` | Tailwind CSS v4 + Radix UI setup + frontend-design skill config | status: pending | requires: 00b |
-- [ ] **00g** | `prd-phases/00-foundation/prd-00g-testing.md` | Vitest config + Playwright config + sample tests + coverage baseline | status: pending | requires: 00e |
-- [ ] **00h** | `prd-phases/00-foundation/prd-00h-cicd-deploy.md` | GitHub Actions + Docker + Vercel config + Railway config | status: pending | requires: 00g |
+- [ ] **00a** | `prd-phases/00-foundation/prd-00a-task-management.md` | Task management setup (bd init + verification) | status: complete | requires: none |
+- [ ] **00b** | `prd-phases/00-foundation/prd-00b-project-init.md` | Turborepo monorepo init, workspace config, dev servers | status: complete | requires: 00a |
+- [ ] **00c** | `prd-phases/00-foundation/prd-00c-code-quality.md` | ESLint, Prettier, Husky, lint-staged, TypeScript strict | status: complete | requires: 00b |
+- [ ] **00d** | `prd-phases/00-foundation/prd-00d-database.md` | PostgreSQL + Drizzle schema + migrations + NextAuth (Auth.js) + USDA FDC dataset | status: complete | requires: 00b |
+- [x] **00e** | `prd-phases/00-foundation/prd-00e-api-foundation.md` | Hono server + Socket.io setup + route skeleton + env validation | status: complete | requires: 00d |
+- [ ] **00f** | `prd-phases/00-foundation/prd-00f-styling.md` | Tailwind CSS v4 + Radix UI setup + frontend-design skill config | status: complete | requires: 00b |
+- [ ] **00g** | `prd-phases/00-foundation/prd-00g-testing.md` | Vitest config + Playwright config + browser/offline/device verification baseline | status: complete | requires: 00e, 00f |
+- [ ] **00h** | `prd-phases/00-foundation/prd-00h-cicd-deploy.md` | GitHub Actions + Docker + Vercel config + Railway config | status: complete | requires: 00c, 00g |
 
 ### Group 1: MVP (Must Have)
 
-- [ ] **01-data-schema** | `prd-phases/01-mvp-data/prd-01-data-schema.md` | Full Drizzle schema: users, households, recipes, lists, plans, pantry, sync queue | status: pending | requires: 00d |
-- [ ] **01-data-usda** | `prd-phases/01-mvp-data/prd-01-data-usda.md` | USDA FDC dataset download + PostgreSQL import + ingredient FTS index | status: pending | requires: 01-data-schema |
-- [ ] **01-api-auth** | `prd-phases/01-mvp-api/prd-01-api-auth.md` | Better Auth routes: sign up, sign in, magic link, OAuth, guest sessions, household invites | status: pending | requires: 01-data-schema |
+- [ ] **01-data-schema** | `prd-phases/01-mvp-data/prd-01-data-schema.md` | Full Drizzle schema: users, households, recipes, lists, plans, pantry, sync queue | status: complete | requires: 00d |
+- [ ] **01-data-usda** | `prd-phases/01-mvp-data/prd-01-data-usda.md` | USDA FDC dataset download + PostgreSQL import + ingredient FTS index | status: complete | requires: 01-data-schema |
+- [ ] **01-api-auth** | `prd-phases/01-mvp-api/prd-01-api-auth.md` | NextAuth (Auth.js) routes: sign up, sign in, OAuth, JWT sessions, guest sessions, household invites | status: complete | requires: 01-data-schema |
 - [ ] **01-api-recipes** | `prd-phases/01-mvp-api/prd-01-api-recipes.md` | Recipe CRUD, URL import (JSON-LD), search, nutrition pipeline (Haiku + USDA) | status: pending | requires: 01-data-usda, 01-api-auth |
 - [ ] **01-api-households** | `prd-phases/01-mvp-api/prd-01-api-households.md` | Household create/join, member management, invite links, guest-add mode | status: pending | requires: 01-api-auth |
+- [ ] **01-api-pantry** | `prd-phases/01-mvp-api/prd-01-api-pantry.md` | Pantry CRUD, starter pantry templates, household pantry sync contract | status: pending | requires: 01-api-households |
 - [ ] **01-api-lists** | `prd-phases/01-mvp-api/prd-01-api-lists.md` | Grocery list CRUD + Socket.io real-time mutations + conflict resolution | status: pending | requires: 01-api-households |
 - [ ] **01-api-plans** | `prd-phases/01-mvp-api/prd-01-api-plans.md` | Meal plan CRUD + recipe-to-list auto-generation + weekly calendar | status: pending | requires: 01-api-lists |
 - [ ] **01-api-fulfillment** | `prd-phases/01-mvp-api/prd-01-api-fulfillment.md` | Instacart IDP deep-link construction + Smart Bundling + affiliate attribution | status: pending | requires: 01-api-plans |
 - [ ] **01-ui-pwa** | `prd-phases/01-mvp-ui/prd-01-ui-pwa.md` | PWA shell: Vite config, Workbox SW, A2HS prompt, offline indicator, Dexie setup, sync queue | status: pending | requires: 00f, 00g |
 - [ ] **01-ui-components** | `prd-phases/01-mvp-ui/prd-01-ui-components.md` | Design system components: RecipeCard, GroceryItem, HouseholdAvatar, FilterChip, NutritionBadge | status: pending | requires: 01-ui-pwa |
-- [ ] **01-pages-onboarding** | `prd-phases/01-mvp-pages/prd-01-pages-onboarding.md` | Onboarding flow: skill level, household size, dietary profile, Starter Pantry, A2HS prompt | status: pending | requires: 01-ui-components, 01-api-auth |
+- [ ] **01-pages-onboarding** | `prd-phases/01-mvp-pages/prd-01-pages-onboarding.md` | Onboarding flow: skill level, household size, dietary profile, Starter Pantry, A2HS prompt | status: pending | requires: 01-ui-components, 01-api-auth, 01-api-pantry |
 - [ ] **01-pages-recipes** | `prd-phases/01-mvp-pages/prd-01-pages-recipes.md` | Recipe library, search/filter, recipe detail, step-by-step cooking view (Wake Lock), URL import | status: pending | requires: 01-pages-onboarding, 01-api-recipes |
 - [ ] **01-pages-planning** | `prd-phases/01-mvp-pages/prd-01-pages-planning.md` | Weekly calendar, meal assignment, shared grocery list, real-time sync UI, offline-first | status: pending | requires: 01-pages-recipes, 01-api-plans |
 - [ ] **01-pages-fulfillment** | `prd-phases/01-mvp-pages/prd-01-pages-fulfillment.md` | Deliver Me This flow, Instacart IDP deep-link, Smart Bundle upsell, attribution display | status: pending | requires: 01-pages-planning, 01-api-fulfillment |
 - [ ] **01-verify** | `prd-phases/01-mvp-verify/prd-01-verify.md` | E2E persona flows: Maya (eco filter), Darius (plan->list->Instacart), Jordan (onboarding), offline smoke tests | status: pending | requires: 01-pages-fulfillment |
+- [ ] **01-verify-runtime** | `prd-phases/01-mvp-verify/prd-01-verify-runtime.md` | Production-like browser/runtime/device validation: installability, offline recovery, performance, ADB smoke checks | status: pending | requires: 01-verify |
 
 ### Group 2: Launch (Should Have)
 
-- [ ] **02-fridge-clearance** | `prd-phases/02-launch/prd-02-fridge-clearance.md` | AI Fridge-Clearance: pantry input, expiration tracking, Claude Haiku recipe matching (F11) | status: pending | requires: 01-verify |
-- [ ] **02-cost-serving** | `prd-phases/02-launch/prd-02-cost-serving.md` | Cost-per-serving display, budget targets, pantry-aware costing (F12) | status: pending | requires: 01-verify |
-- [ ] **02-potluck** | `prd-phases/02-launch/prd-02-potluck.md` | Potluck & Event Planner: event creation, slot claiming (no login), real-time locks (F13) | status: pending | requires: 01-verify |
-- [ ] **02-batch-prep** | `prd-phases/02-launch/prd-02-batch-prep.md` | Batch Prep Mode: multi-recipe selection, cook sequencing, combined list, portioning view (F14) | status: pending | requires: 01-verify |
-- [ ] **02-dietary-adaptation** | `prd-phases/02-launch/prd-02-dietary-adaptation.md` | Dietary Adaptation Mode: Make This Vegan/Dairy-Free, whole-recipe substitution (F15) | status: pending | requires: 01-verify |
-- [ ] **02-coaching** | `prd-phases/02-launch/prd-02-coaching.md` | In-Step Contextual Coaching: technique glossary, ingredient explainers, inline tap-to-reveal (F16) | status: pending | requires: 01-verify |
-- [ ] **02-household-ops** | `prd-phases/02-launch/prd-02-household-ops.md` | Grocery Cost Splitting + Cook Rotation Scheduling (F27, F28) | status: pending | requires: 01-verify |
-- [ ] **02-fulfillment-v2** | `prd-phases/02-launch/prd-02-fulfillment-v2.md` | Instacart IDP full cart API (replace deep-link) + Kroger developer API + Chicory CPG integration | status: pending | requires: 01-verify |
+- [ ] **02-fridge-clearance** | `prd-phases/02-launch/prd-02-fridge-clearance.md` | AI Fridge-Clearance: pantry input, expiration tracking, Claude Haiku recipe matching (F11) | status: pending | requires: 01-verify-runtime |
+- [ ] **02-cost-serving** | `prd-phases/02-launch/prd-02-cost-serving.md` | Cost-per-serving display, budget targets, pantry-aware costing (F12) | status: pending | requires: 01-verify-runtime |
+- [ ] **02-potluck** | `prd-phases/02-launch/prd-02-potluck.md` | Potluck & Event Planner: event creation, slot claiming (no login), real-time locks (F13) | status: pending | requires: 01-verify-runtime |
+- [ ] **02-batch-prep** | `prd-phases/02-launch/prd-02-batch-prep.md` | Batch Prep Mode: multi-recipe selection, cook sequencing, combined list, portioning view (F14) | status: pending | requires: 01-verify-runtime |
+- [ ] **02-dietary-adaptation** | `prd-phases/02-launch/prd-02-dietary-adaptation.md` | Dietary Adaptation Mode: Make This Vegan/Dairy-Free, whole-recipe substitution (F15) | status: pending | requires: 01-verify-runtime |
+- [ ] **02-coaching** | `prd-phases/02-launch/prd-02-coaching.md` | In-Step Contextual Coaching: technique glossary, ingredient explainers, inline tap-to-reveal (F16) | status: pending | requires: 01-verify-runtime |
+- [ ] **02-household-ops** | `prd-phases/02-launch/prd-02-household-ops.md` | Grocery Cost Splitting + Cook Rotation Scheduling (F27, F28) | status: pending | requires: 01-verify-runtime |
+- [ ] **02-fulfillment-v2** | `prd-phases/02-launch/prd-02-fulfillment-v2.md` | Instacart IDP full cart API (replace deep-link) + Kroger developer API + Chicory CPG integration | status: pending | requires: 01-verify-runtime |
 
 ### Group 3: Traction (Could Have)
 
@@ -127,6 +157,9 @@ Every PRD file in this system MUST include:
 3. **Tasks** section: atomic tasks with BD IDs, Type/Do/Files/Verify/Accept fields
 4. **Final task**: "Update manifest" -- marks this PRD complete in the manifest registry
 5. **Discovered Tasks** section (initially empty): for work discovered during execution
+6. **Runtime verification requirement**: any UI-facing PRD must include an actual browser validation task; mobile/device validation is required when tooling and hardware are available
+7. **Build-then-Verify requirement**: task ordering must complete all implementation work before tests are written or run; do not interleave test writing with feature building
+8. **Branch naming note**: the `branch` field is the PRD slug; actual execution branches should still follow the active BD task ID convention from `AGENTS.md`
 
 ---
 
@@ -134,11 +167,11 @@ Every PRD file in this system MUST include:
 
 | Metric | Count |
 |--------|-------|
-| Total PRDs | 29 |
+| Total PRDs | 38 |
 | Foundation (Group 0) | 8 |
-| MVP (Group 1) | 15 |
+| MVP (Group 1) | 17 |
 | Launch (Group 2) | 8 |
 | Traction (Group 3) | 5 (including 03-hardware) |
-| Complete | 0 |
-| Pending | 29 |
+| Complete | 4 |
+| Pending | 38 |
 | Blocked | 0 |

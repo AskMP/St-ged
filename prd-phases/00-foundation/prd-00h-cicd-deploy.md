@@ -5,7 +5,7 @@ test_command: "pnpm build"
 completion_promise: "COMPLETE"
 max_iterations: 8
 chain_next: null
-requires: ["00g"]
+requires: ["00c", "00g"]
 parallel_safe: false
 group: 0
 manifest_id: "00h"
@@ -17,14 +17,14 @@ manifest_id: "00h"
 
 ### What This PRD Does
 
-Configures GitHub Actions CI (lint, type-check, test, build on every PR), Dockerfile for the API server, Vercel configuration for the web PWA, and Railway configuration for the API. By the end, opening a PR triggers the full CI pipeline.
+Configures GitHub Actions CI (lint, type-check, test, build, and browser smoke checks on every PR), Dockerfile for the API server, Vercel configuration for the web PWA, and Railway configuration for the API. By the end, opening a PR triggers the full CI pipeline and preserves enough artifacts to debug browser/runtime failures.
 
 ### What Was Built Before This
 
 | PRD | Key Output | Files |
 |-----|-----------|-------|
 | 00c | ESLint, Prettier, Husky | `eslint.config.mjs`, `.prettierrc`, `.husky/` |
-| 00g | Vitest + Playwright test suites passing | `apps/web/vitest.config.ts`, `apps/api/vitest.config.ts` |
+| 00g | Vitest + Playwright + offline/device verification baseline | `apps/web/vitest.config.ts`, `apps/api/vitest.config.ts`, `apps/web/playwright.config.ts` |
 
 ### Key Files to Read First
 
@@ -106,47 +106,47 @@ CMD ["node", "dist/index.js"]
 
 ## Tasks
 
-- [ ] **Task 1: Create GitHub Actions CI workflow** `[BD:STG-45]`
+- [x] **Task 1: Create GitHub Actions CI workflow** `[BD:STG-45]`
   - **Type**: task
-  - **Do**: Create `.github/workflows/ci.yml` with the pattern shown above. The workflow runs on push to `main` and all PRs. Steps: checkout, pnpm setup, Node 22 setup, `pnpm install --frozen-lockfile`, `pnpm type-check`, `pnpm lint`, `pnpm format:check`, `pnpm build`, `pnpm test`. Set `CI=true` environment variable so Playwright uses the correct mode. Note: E2E tests are excluded from CI at this stage (Playwright E2E requires a running server; add to CI in prd-01-verify when the app has real routes).
+  - **Do**: Create `.github/workflows/ci.yml` with the pattern shown above. The workflow runs on push to `main` and all PRs. Steps: checkout, pnpm setup, Node 22 setup, `pnpm install --frozen-lockfile`, `pnpm type-check`, `pnpm lint`, `pnpm format:check`, `pnpm build`, `pnpm test`, and the current Playwright browser smoke suite. Set `CI=true` environment variable so Playwright uses the correct mode. Upload Playwright traces/screenshots on failure so browser/runtime regressions are debuggable in CI.
   - **Files**: `.github/workflows/ci.yml`
   - **Verify**: Workflow file is valid YAML; `act` (local GitHub Actions runner) or push to GitHub shows green CI
-  - **Accept**: CI workflow runs lint + type-check + build + unit tests on PR
+  - **Accept**: CI workflow runs lint + type-check + build + tests + browser smoke on PR, with debug artifacts on failure
 
-- [ ] **Task 2: Create Dockerfile for API** `[BD:STG-46]`
+- [x] **Task 2: Create Dockerfile for API** `[BD:STG-46]`
   - **Type**: task
   - **Do**: Create `apps/api/Dockerfile` using the multi-stage pattern shown above. Add `.dockerignore` at the project root ignoring: `node_modules/`, `.git/`, `*.log`, `.env*`, `packages/usda/src/data/` (large dataset), `apps/web/` (not needed for API image). Verify the API `tsconfig.json` has `outDir: "dist"` so `pnpm --filter api build` produces `apps/api/dist/`. Test the Docker build locally: `docker build -f apps/api/Dockerfile -t staged-api .` from project root.
   - **Files**: `apps/api/Dockerfile`, `.dockerignore`, `apps/api/tsconfig.json` (ensure outDir set)
   - **Verify**: `docker build -f apps/api/Dockerfile -t staged-api .` exits 0
   - **Accept**: Docker image builds successfully; image size < 500MB
 
-- [ ] **Task 3: Configure Vercel for web PWA** `[BD:STG-47]`
+- [x] **Task 3: Configure Vercel for web PWA** `[BD:STG-47]`
   - **Type**: task
   - **Do**: Create `vercel.json` at the project root with the config shown above (buildCommand, outputDirectory, installCommand). This tells Vercel to build only the web app from the monorepo root. Create `.vercelignore` to exclude `packages/usda/src/data/`, `apps/api/`, `node_modules/`. Add environment variable documentation: create `docs/deployment.md` listing all required environment variables for each deployment target (Vercel web, Railway API) with descriptions and whether they're required or optional.
   - **Files**: `vercel.json`, `.vercelignore`, `docs/deployment.md`
   - **Verify**: `pnpm --filter web build` generates `apps/web/dist/` with `index.html` and `manifest.webmanifest`
   - **Accept**: `vercel.json` present; web build produces PWA-ready dist; deployment docs written
 
-- [ ] **Task 4: Create Railway configuration** `[BD:STG-48]`
+- [x] **Task 4: Create Railway configuration** `[BD:STG-48]`
   - **Type**: task
-  - **Do**: Create `railway.json` at the project root specifying the API service: `{"$schema": "https://railway.app/railway.schema.json", "build": {"builder": "DOCKERFILE", "dockerfilePath": "apps/api/Dockerfile"}, "deploy": {"startCommand": "node dist/index.js", "healthcheckPath": "/health", "healthcheckTimeout": 30}}`. Add a `Procfile` as an alternative: `web: node apps/api/dist/index.js`. Document Railway deployment steps in `docs/deployment.md`: set DATABASE_URL (Supabase connection string), BETTER_AUTH_SECRET, ANTHROPIC_API_KEY, PORT=3000 in Railway environment variables.
+  - **Do**: Create `railway.json` at the project root specifying the API service: `{"$schema": "https://railway.app/railway.schema.json", "build": {"builder": "DOCKERFILE", "dockerfilePath": "apps/api/Dockerfile"}, "deploy": {"startCommand": "node dist/index.js", "healthcheckPath": "/health", "healthcheckTimeout": 30}}`. Add a `Procfile` as an alternative: `web: node apps/api/dist/index.js`. Document Railway deployment steps in `docs/deployment.md`: set DATABASE_URL (Supabase connection string), NEXTAUTH_SECRET, NEXTAUTH_URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, ANTHROPIC_API_KEY, PORT=3000 in Railway environment variables.
   - **Files**: `railway.json`, `docs/deployment.md` (updated)
   - **Verify**: `railway.json` is valid JSON; healthcheck path matches the actual `/health` endpoint
   - **Accept**: Railway config present; API can be deployed from the Dockerfile
 
-- [ ] **Task 5: Add build scripts and validate full pipeline** `[BD:STG-49]`
+- [x] **Task 5: Add build scripts and validate full pipeline** `[BD:STG-49]`
   - **Type**: task
-  - **Do**: Ensure `apps/api/tsconfig.json` has `compilerOptions.outDir: "./dist"` for the production build. Run the full local CI simulation: `pnpm install --frozen-lockfile && pnpm type-check && pnpm lint && pnpm format:check && pnpm build && pnpm test`. All commands must exit 0. Fix any issues discovered (document in `.claude/known-errors.md` if a known limitation). Run `pnpm --filter web build` and verify `apps/web/dist/` contains `index.html`, `manifest.webmanifest`, and at least one service worker file.
+  - **Do**: Ensure `apps/api/tsconfig.json` has `compilerOptions.outDir: "./dist"` for the production build. Run the full local CI simulation: `pnpm install --frozen-lockfile && pnpm type-check && pnpm lint && pnpm format:check && pnpm build && pnpm test && pnpm --filter web test:e2e`. All commands must exit 0. Fix any issues discovered (document in `.claude/known-errors.md` if a known limitation). Run `pnpm --filter web build` and verify `apps/web/dist/` contains `index.html`, `manifest.webmanifest`, and at least one service worker file.
   - **Files**: `apps/api/tsconfig.json`, `.claude/known-errors.md` (update if issues)
   - **Verify**: Full pipeline simulation exits 0; web dist contains PWA manifest
-  - **Accept**: CI pipeline passes locally; PWA build artifact present
+  - **Accept**: CI pipeline passes locally, including browser smoke; PWA build artifact present
 
-- [ ] **Task 6: Update manifest** `[BD:STG-50]`
+- [x] **Task 6: Update manifest** `[BD:STG-50]`
   - **Type**: chore
-  - **Do**: Open `prd-phases/manifest.md`. Find the registry entry for `00h`. Change `status: pending` to `status: complete`. Update Current State: "Last completed PRD" = `00h`, set progress to `8 / 29 PRDs complete`. All Group 0 PRDs are now complete. The project is ready to begin MVP feature development (Group 1). Note this milestone in the Current State section.
+  - **Do**: Open `prd-phases/manifest.md`. Find the registry entry for `00h`. Change `status: pending` to `status: complete`. Update Current State: "Last completed PRD" = `00h`, set progress to `8 / 38 PRDs complete`. All Group 0 PRDs are now complete. The project is ready to begin MVP feature development (Group 1). Note this milestone in the Current State section.
   - **Files**: `prd-phases/manifest.md`
   - **Verify**: `grep "00h" prd-phases/manifest.md` shows `status: complete`; all 8 Group 0 entries show `status: complete`
-  - **Accept**: All foundation PRDs complete; Group 1 PRDs unblocked; progress = 8/29
+  - **Accept**: All foundation PRDs complete; Group 1 PRDs unblocked; progress = 8/38
 
 ---
 

@@ -13,27 +13,27 @@ Claude Code users: see `CLAUDE.md` for extended configuration with `@import` dir
 
 ## Tech Stack
 
-| Technology | Version | Purpose |
-|-----------|---------|---------|
-| React | 19 | Frontend UI (Progressive Web App) |
-| Vite + vite-plugin-pwa | 6+ | Build tool + Service Worker + Web App Manifest |
-| Workbox | 7+ | Service Worker caching (SWR for recipes, Cache-First for shell, Network-First for lists) |
-| Dexie.js | 4+ | IndexedDB ORM -- offline data storage + sync queue |
-| Zustand | 5+ | Client state management |
-| React Router | 7 | Client-side routing |
-| Tailwind CSS | v4 | Styling |
-| Radix UI | latest | Accessible UI primitives |
-| Hono | 4+ | TypeScript HTTP server (API) |
-| Socket.io | 4+ | WebSocket real-time sync (per-household rooms) |
-| Node.js | 22 LTS | API runtime |
-| PostgreSQL | 16 | Primary database |
-| Drizzle ORM | latest | TypeScript ORM + migrations |
-| Better Auth | latest | Self-hosted auth (email, magic link, OAuth, guest sessions) |
-| Turborepo | latest | Monorepo orchestration |
-| pnpm | 9+ | Package manager (workspaces) |
-| Vitest | 2+ | Unit + integration testing |
-| Playwright | latest | E2E testing |
-| Claude Haiku | claude-haiku-4-5 | LLM-as-parser: ingredient text -> USDA FDC ID |
+| Technology             | Version          | Purpose                                                                                  |
+| ---------------------- | ---------------- | ---------------------------------------------------------------------------------------- |
+| React                  | 19               | Frontend UI (Progressive Web App)                                                        |
+| Vite + vite-plugin-pwa | 6+               | Build tool + Service Worker + Web App Manifest                                           |
+| Workbox                | 7+               | Service Worker caching (SWR for recipes, Cache-First for shell, Network-First for lists) |
+| Dexie.js               | 4+               | IndexedDB ORM -- offline data storage + sync queue                                       |
+| Zustand                | 5+               | Client state management                                                                  |
+| React Router           | 7                | Client-side routing                                                                      |
+| Tailwind CSS           | v4               | Styling                                                                                  |
+| Radix UI               | latest           | Accessible UI primitives                                                                 |
+| Hono                   | 4+               | TypeScript HTTP server (API)                                                             |
+| Socket.io              | 4+               | WebSocket real-time sync (per-household rooms)                                           |
+| Node.js                | 22 LTS           | API runtime                                                                              |
+| PostgreSQL             | 16               | Primary database                                                                         |
+| Drizzle ORM            | latest           | TypeScript ORM + migrations                                                              |
+| Auth.js (NextAuth v5)  | latest           | Self-hosted auth via @hono/auth-js (email/password, OAuth, JWT sessions, guest sessions) |
+| Turborepo              | latest           | Monorepo orchestration                                                                   |
+| pnpm                   | 9+               | Package manager (workspaces)                                                             |
+| Vitest                 | 2+               | Unit + integration testing                                                               |
+| Playwright             | latest           | E2E testing                                                                              |
+| Claude Haiku           | claude-haiku-4-5 | LLM-as-parser: ingredient text -> USDA FDC ID                                            |
 
 ## Project Structure
 
@@ -114,12 +114,12 @@ pnpm --filter @staged/db migrate
 
 ## Services
 
-| Service | Port | Purpose |
-|---------|------|---------|
-| Web PWA (Vite dev) | 5173 | React frontend + Service Worker |
-| API server (Hono) | 3000 | REST API + Socket.io WebSocket |
-| PostgreSQL | 5432 | Primary database |
-| Socket.io | ws://localhost:3000 | Real-time household sync |
+| Service            | Port                | Purpose                         |
+| ------------------ | ------------------- | ------------------------------- |
+| Web PWA (Vite dev) | 5173                | React frontend + Service Worker |
+| API server (Hono)  | 3000                | REST API + Socket.io WebSocket  |
+| PostgreSQL         | 5432                | Primary database                |
+| Socket.io          | ws://localhost:3000 | Real-time household sync        |
 
 ## Task Management
 
@@ -131,17 +131,17 @@ pnpm --filter @staged/db migrate
 
 ALL task state flows through **bd (beads)**. NEVER use other tools as substitutes -- they are invisible to the project's task history.
 
-| Action | Command |
-|--------|---------|
-| Init | `bd init --prefix STG` |
-| Create task | `bd create -t task -d "DESC" "TITLE"` |
+| Action         | Command                                           |
+| -------------- | ------------------------------------------------- |
+| Init           | `bd init --prefix STG`                            |
+| Create task    | `bd create -t task -d "DESC" "TITLE"`             |
 | Create feature | `bd create -t feature -d "DESC" "Feature: TITLE"` |
-| List active | `bd list -s in_progress` |
-| Show task | `bd show TASK_ID` |
-| Set status | `bd update TASK_ID -s STATUS` |
-| Append notes | `bd update TASK_ID --append-notes "NOTE"` |
-| Set dependency | `bd dep OTHER_ID --blocks TASK_ID` |
-| Close task | `bd close TASK_ID` |
+| List active    | `bd list -s in_progress`                          |
+| Show task      | `bd show TASK_ID`                                 |
+| Set status     | `bd update TASK_ID -s STATUS`                     |
+| Append notes   | `bd update TASK_ID --append-notes "NOTE"`         |
+| Set dependency | `bd dep OTHER_ID --blocks TASK_ID`                |
+| Close task     | `bd close TASK_ID`                                |
 
 ## Development Workflow
 
@@ -188,3 +188,116 @@ ALL task state flows through **bd (beads)**. NEVER use other tools as substitute
 - **Amazon Fresh excluded**: No public API
 - **Screen Wake Lock**: Required in step-by-step cooking view
 - **DMCA agent prerequisite**: Must register at copyright.gov/dmca-agent/ before recipe URL import ships
+
+<!-- BEGIN BEADS INTEGRATION -->
+## Issue Tracking with bd (beads)
+
+**IMPORTANT**: This project uses **bd (beads)** for ALL issue tracking. Do NOT use markdown TODOs, task lists, or other tracking methods.
+
+### Why bd?
+
+- Dependency-aware: Track blockers and relationships between issues
+- Git-friendly: Auto-syncs to JSONL for version control
+- Agent-optimized: JSON output, ready work detection, discovered-from links
+- Prevents duplicate tracking systems and confusion
+
+### Quick Start
+
+**Check for ready work:**
+
+```bash
+bd ready --json
+```
+
+**Create new issues:**
+
+```bash
+bd create "Issue title" --description="Detailed context" -t bug|feature|task -p 0-4 --json
+bd create "Issue title" --description="What this issue is about" -p 1 --deps discovered-from:bd-123 --json
+```
+
+**Claim and update:**
+
+```bash
+bd update bd-42 --status in_progress --json
+bd update bd-42 --priority 1 --json
+```
+
+**Complete work:**
+
+```bash
+bd close bd-42 --reason "Completed" --json
+```
+
+### Issue Types
+
+- `bug` - Something broken
+- `feature` - New functionality
+- `task` - Work item (tests, docs, refactoring)
+- `epic` - Large feature with subtasks
+- `chore` - Maintenance (dependencies, tooling)
+
+### Priorities
+
+- `0` - Critical (security, data loss, broken builds)
+- `1` - High (major features, important bugs)
+- `2` - Medium (default, nice-to-have)
+- `3` - Low (polish, optimization)
+- `4` - Backlog (future ideas)
+
+### Workflow for AI Agents
+
+1. **Check ready work**: `bd ready` shows unblocked issues
+2. **Claim your task**: `bd update <id> --status in_progress`
+3. **Work on it**: Implement, test, document
+4. **Discover new work?** Create linked issue:
+   - `bd create "Found bug" --description="Details about what was found" -p 1 --deps discovered-from:<parent-id>`
+5. **Complete**: `bd close <id> --reason "Done"`
+
+### Auto-Sync
+
+bd automatically syncs with git:
+
+- Exports to `.beads/issues.jsonl` after changes (5s debounce)
+- Imports from JSONL when newer (e.g., after `git pull`)
+- No manual export/import needed!
+
+### Important Rules
+
+- ✅ Use bd for ALL task tracking
+- ✅ Always use `--json` flag for programmatic use
+- ✅ Link discovered work with `discovered-from` dependencies
+- ✅ Check `bd ready` before asking "what should I work on?"
+- ❌ Do NOT create markdown TODO lists
+- ❌ Do NOT use external issue trackers
+- ❌ Do NOT duplicate tracking systems
+
+For more details, see README.md and docs/QUICKSTART.md.
+
+<!-- END BEADS INTEGRATION -->
+
+## Landing the Plane (Session Completion)
+
+**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
+
+**MANDATORY WORKFLOW:**
+
+1. **File issues for remaining work** - Create issues for anything that needs follow-up
+2. **Run quality gates** (if code changed) - Tests, linters, builds
+3. **Update issue status** - Close finished work, update in-progress items
+4. **PUSH TO REMOTE** - This is MANDATORY:
+   ```bash
+   git pull --rebase
+   bd sync
+   git push
+   git status  # MUST show "up to date with origin"
+   ```
+5. **Clean up** - Clear stashes, prune remote branches
+6. **Verify** - All changes committed AND pushed
+7. **Hand off** - Provide context for next session
+
+**CRITICAL RULES:**
+- Work is NOT complete until `git push` succeeds
+- NEVER stop before pushing - that leaves work stranded locally
+- NEVER say "ready to push when you are" - YOU must push
+- If push fails, resolve and retry until it succeeds

@@ -1,5 +1,5 @@
 ---
-task: "Database setup -- PostgreSQL + Drizzle schema + Better Auth + USDA FDC dataset"
+task: "Database setup -- PostgreSQL + Drizzle schema + NextAuth (Auth.js) + USDA FDC dataset"
 branch: "stg-00d/database"
 test_command: "pnpm --filter @staged/db migrate"
 completion_promise: "COMPLETE"
@@ -17,7 +17,7 @@ manifest_id: "00d"
 
 ### What This PRD Does
 
-Sets up the full database layer: PostgreSQL connection (via Supabase for prod, local Docker for dev), Drizzle ORM schema skeleton with core tables, Better Auth integration, and the USDA FoodData Central dataset download + PostgreSQL import. By the end of this PRD, the DB schema exists and can be migrated, Better Auth tables are created, and the USDA FDC ingredient table is populated.
+Sets up the full database layer: PostgreSQL connection (via Supabase for prod, local Docker for dev), Drizzle ORM schema skeleton with core tables, NextAuth (Auth.js v5) integration via `@hono/auth-js` and `@auth/drizzle-adapter`, and the USDA FoodData Central dataset download + PostgreSQL import. By the end of this PRD, the DB schema exists and can be migrated, Auth.js tables are created, and the USDA FDC ingredient table is populated.
 
 ### What Was Built Before This
 
@@ -82,14 +82,14 @@ export * from './schema'
 
 ## Tasks
 
-- [ ] **Task 1: Set up local PostgreSQL for development** `[BD:STG-19]`
+- [x] **Task 1: Set up local PostgreSQL for development** `[BD:STG-19]`
   - **Type**: task
-  - **Do**: Create `docker-compose.yml` at the project root with a PostgreSQL 16 service: image `postgres:16-alpine`, env vars `POSTGRES_DB=staged_dev`, `POSTGRES_USER=staged`, `POSTGRES_PASSWORD=staged_dev_password`, port `5432:5432`, named volume `postgres_data`. Create `.env.example` at the project root with `DATABASE_URL=postgresql://staged:staged_dev_password@localhost:5432/staged_dev` and other placeholder env vars (ANTHROPIC_API_KEY, BETTER_AUTH_SECRET, INSTACART_IDP_AFFILIATE_ID). Document in README: "Copy `.env.example` to `.env.local` and run `docker compose up -d` to start local DB."
+  - **Do**: Create `docker-compose.yml` at the project root with a PostgreSQL 16 service: image `postgres:16-alpine`, env vars `POSTGRES_DB=staged_dev`, `POSTGRES_USER=staged`, `POSTGRES_PASSWORD=staged_dev_password`, port `5432:5432`, named volume `postgres_data`. Create `.env.example` at the project root with `DATABASE_URL=postgresql://staged:staged_dev_password@localhost:5432/staged_dev` and other placeholder env vars (ANTHROPIC_API_KEY, NEXTAUTH_SECRET, NEXTAUTH_URL=http://localhost:3000, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, INSTACART_IDP_AFFILIATE_ID). Document in README: "Copy `.env.example` to `.env.local` and run `docker compose up -d` to start local DB."
   - **Files**: `docker-compose.yml`, `.env.example`
   - **Verify**: `docker compose up -d` starts PostgreSQL; `psql postgresql://staged:staged_dev_password@localhost:5432/staged_dev -c "SELECT 1"` returns 1
   - **Accept**: Local PostgreSQL running; connection string works
 
-- [ ] **Task 2: Implement Drizzle schema -- core tables** `[BD:STG-20]`
+- [x] **Task 2: Implement Drizzle schema -- core tables** `[BD:STG-20]`
   - **Type**: task
   - **Do**: Create the following schema files in `packages/db/src/schema/`. Each file defines its table and exports it. Export all from `schema/index.ts`.
 
@@ -112,23 +112,33 @@ export * from './schema'
   - **Verify**: `pnpm --filter @staged/db generate` exits 0 and creates a migration file in `packages/db/src/migrations/`
   - **Accept**: Drizzle schema valid; migration file generated without errors
 
-- [ ] **Task 3: Run initial migration** `[BD:STG-21]`
+- [x] **Task 3: Run initial migration** `[BD:STG-21]`
   - **Type**: task
   - **Do**: Ensure local PostgreSQL is running (`docker compose up -d`). Create `packages/db/src/migrate.ts` script that calls `drizzle-kit migrate` or uses the Drizzle migrator directly. Set `DATABASE_URL` in `.env.local` (copy from `.env.example`). Run `pnpm --filter @staged/db migrate`. Add FTS index SQL: after migration runs, execute `CREATE INDEX IF NOT EXISTS usda_ingredients_search_idx ON usda_ingredients USING gin(search_vector)` and create a trigger to auto-update `search_vector` from `description`. Document the FTS trigger SQL in `packages/db/src/schema/usdaIngredients.ts` as a comment.
   - **Files**: `packages/db/src/migrate.ts`
   - **Verify**: `pnpm --filter @staged/db migrate` exits 0; `psql ... -c "\dt"` shows all tables created
   - **Accept**: All schema tables exist in local PostgreSQL; FTS index created on `usda_ingredients`
 
-- [ ] **Task 4: Integrate Better Auth** `[BD:STG-22]`
+- [x] **Task 4: Integrate NextAuth (Auth.js v5) via @hono/auth-js** `[BD:STG-22]`
   - **Type**: task
-  - **Do**: Add `better-auth` to `apps/api` dependencies (if not already). Create `apps/api/src/lib/auth.ts` that initializes Better Auth with: PostgreSQL adapter (using the db pool from `@staged/db`), email/password provider, magic link provider (stub -- email sending in prd-01-api-auth), Google OAuth provider (stub credentials), Apple OAuth provider (stub credentials), session expiry 30 days. Better Auth auto-creates its own tables (users, sessions, accounts, verification_tokens) via its migration -- run `auth.api.getMigration()` and apply it. Ensure Better Auth tables do NOT conflict with our `users` table -- use Better Auth's `users` as the auth record and our `users` table for app-level profile data, linked by matching `id`/email.
-  - **Files**: `apps/api/src/lib/auth.ts`, `packages/db/src/schema/index.ts` (update if needed)
-  - **Verify**: Better Auth migrations run without error; auth-related tables visible in DB
-  - **Accept**: Better Auth initialized; auth tables created; `auth.api.signUpEmail` callable (will be wired to routes in prd-01-api-auth)
+  - **Do**: Install `@hono/auth-js @auth/core @auth/drizzle-adapter next-auth` in `apps/api`. Create `apps/api/src/lib/auth.ts` with the following complete implementation:
+    - Import `{ authHandler, initAuthConfig, verifyAuth }` from `@hono/auth-js`
+    - Import `{ DrizzleAdapter }` from `@auth/drizzle-adapter`
+    - Import `Credentials` from `@auth/core/providers/credentials`
+    - Import `Google` from `@auth/core/providers/google`
+    - Export an `authConfig` object with: `adapter: DrizzleAdapter(db)`, `providers: [Google, Credentials(...)]`, `session: { strategy: "jwt" }`, `secret: process.env.NEXTAUTH_SECRET`
+    - The Credentials provider `authorize` function should return `null` for now -- full implementation in prd-01-api-auth
+    - Export `getSession` helper: `import { getSession } from "@hono/auth-js"` re-exported for use in middleware
+    - In `apps/api/src/index.ts`, register auth middleware before other routes: `app.use("*", initAuthConfig(() => authConfig))` and mount `app.all("/api/auth/*", authHandler())`
+    - Auth.js with the Drizzle adapter auto-creates required tables (accounts, sessions, users, verification_tokens) on first use. Run `pnpm --filter api dev` briefly to trigger table creation, or apply the Auth.js Drizzle schema manually from `@auth/drizzle-adapter` docs.
+    - Our `users` table in `packages/db/src/schema/users.ts` stores app-level profile data (skillLevel, dietaryProfile, householdId). Auth.js manages its own `users` table for auth identity. Link the two by matching email -- on first sign-in, create the app-level user record if it does not exist (stub for now; implemented fully in prd-01-api-auth).
+  - **Files**: `apps/api/src/lib/auth.ts`, `apps/api/src/index.ts`, `apps/api/package.json`
+  - **Verify**: `pnpm --filter api dev` starts without import errors; `GET http://localhost:3000/api/auth/providers` returns JSON with configured providers
+  - **Accept**: Auth.js initialized; `/api/auth/*` routes respond; auth tables visible in DB
 
-- [ ] **Task 5: Download and import USDA FoodData Central dataset** `[BD:STG-23]`
+- [x] **Task 5: Download and import USDA FoodData Central dataset** `[BD:STG-23]`
   - **Type**: task
-  - **Do**: Create `packages/usda/src/download.ts` with a complete implementation of `downloadAndImportFDC()`:
+  - **Do**: Create `packages/usda/src/download.ts` with a complete implementation of `downloadAndImportFDC()`. Implement the full pipeline first, then verify it works end-to-end:
     1. Download the USDA FoodData Central "Foundation Foods" + "SR Legacy" JSON files from `https://fdc.nal.usda.gov/fdc-datasets/` (public download, no auth required). Target files: `FoodData_Central_foundation_food_json_2024-10-31.zip` and `FoodData_Central_sr_legacy_food_json_2021-10-28.zip`.
     2. Unzip to `packages/usda/src/data/` (gitignored).
     3. Parse JSON: extract `fdcId`, `description`, `brandOwner`, `foodCategory`, and from `foodNutrients`: energy (nutrient ID 1008), protein (1003), fat (1004), carbs (1005), fiber (1079).
@@ -139,16 +149,16 @@ export * from './schema'
   - **Verify**: `pnpm --filter @staged/usda import-fdc` runs and imports > 100,000 rows into `usda_ingredients`
   - **Accept**: `SELECT COUNT(*) FROM usda_ingredients` returns > 100,000; FTS search `SELECT * FROM usda_ingredients WHERE search_vector @@ to_tsquery('flour')` returns results
 
-- [ ] **Task 6: Export db client for apps** `[BD:STG-24]`
+- [x] **Task 6: Export db client for apps** `[BD:STG-24]`
   - **Type**: task
-  - **Do**: Update `packages/db/src/index.ts` to export: the `db` Drizzle instance, all schema tables, and a `pool` export for Better Auth's adapter. Add `@staged/db` as a dependency in `apps/api/package.json`. Import `db` in `apps/api/src/index.ts` to verify the import resolves (no actual use yet -- just `import { db } from '@staged/db'` at the top with a comment `// DB client ready`).
+  - **Do**: Update `packages/db/src/index.ts` to export: the `db` Drizzle instance and all schema tables. Add `@staged/db` as a dependency in `apps/api/package.json`. Confirm `db` is already imported in `apps/api/src/lib/auth.ts` from Task 4. Verify the import resolves cleanly from the API package.
   - **Files**: `packages/db/src/index.ts`, `apps/api/package.json`, `apps/api/src/index.ts`
   - **Verify**: `pnpm --filter api type-check` passes; no import errors on `@staged/db`
   - **Accept**: `db` client importable from `@staged/db`; API type-checks clean
 
-- [ ] **Task 7: Update manifest** `[BD:STG-25]`
+- [x] **Task 7: Update manifest** `[BD:STG-25]`
   - **Type**: chore
-  - **Do**: Open `prd-phases/manifest.md`. Find the registry entry for `00d`. Change `status: pending` to `status: complete`. Update Current State: "Last completed PRD" = `00d`, increment progress appropriately. Confirm `00e` (requires: 00d) and `01-data-schema` (requires: 00d) are now unblocked.
+  - **Do**: Open `prd-phases/manifest.md`. Find the registry entry for `00d`. Change `status: pending` to `status: complete`. Update Current State: "Last completed PRD" = `00d`, increment progress to `4 / 38 PRDs complete`. Confirm `00e` (requires: 00d) and `01-data-schema` (requires: 00d) are now unblocked.
   - **Files**: `prd-phases/manifest.md`
   - **Verify**: `grep "00d" prd-phases/manifest.md` shows `status: complete`
   - **Accept**: Manifest updated; 00e and 01-data-schema unblocked
