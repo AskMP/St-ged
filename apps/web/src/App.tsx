@@ -2,15 +2,16 @@ import { useEffect, useState } from "react";
 import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
 import { InstallPrompt } from "./components/InstallPrompt";
 import { OfflineBanner } from "./components/OfflineBanner";
-import Home from "./routes/Home";
-import Onboarding from "./routes/Onboarding";
-import Lists from "./routes/Lists";
-import Recipes, { RecipeDetail, CookingView } from "./routes/Recipes";
 import FridgeClearance from "./routes/FridgeClearance";
+import FulfillmentPage from "./routes/FulfillmentPage";
+import Home from "./routes/Home";
+import Lists from "./routes/Lists";
+import Onboarding from "./routes/Onboarding";
 import Planning from "./routes/Planning";
 import Potluck from "./routes/Potluck";
 import PotluckDetail from "./routes/PotluckDetail";
-import FulfillmentPage from "./routes/FulfillmentPage";
+import BatchPrep from "./routes/BatchPrep";
+import Recipes, { CookingView, RecipeDetail } from "./routes/Recipes";
 
 function App() {
   const [online, setOnline] = useState(navigator.onLine);
@@ -40,6 +41,7 @@ function App() {
           <Link to="/fridge-clearance">Fridge Clearance</Link>
           <Link to="/potluck">Potluck</Link>
           <Link to="/fulfillment">Fulfillment</Link>
+          <Link to="/batch-prep">Batch Prep</Link>
         </nav>
       </header>
       <main className="p-4">
@@ -55,6 +57,7 @@ function App() {
           <Route path="/potluck" element={<Potluck />} />
           <Route path="/potluck/:id" element={<PotluckDetail />} />
           <Route path="/fulfillment" element={<FulfillmentPage />} />
+          <Route path="/batch-prep" element={<BatchPrep />} />
         </Routes>
       </main>
     </BrowserRouter>
