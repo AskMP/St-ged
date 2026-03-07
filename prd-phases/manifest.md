@@ -16,10 +16,10 @@ max_iterations: 100
 
 | Field | Value |
 |-------|-------|
-| Last completed PRD | 01-api-recipes |
+| Last completed PRD | 01-api-households |
 | Timestamp | $(date -u "+%Y-%m-%d %H:%M:%S UTC") |
 | Current phase | 0 (Foundation) |
-| Progress | 12 / 38 PRDs complete |
+| Progress | 13 / 38 PRDs complete |
 
 ---
 
@@ -127,7 +127,7 @@ PRDs with `parallel_safe: true` and all `requires` satisfied may be executed con
 - [x] **01-data-usda** | `prd-phases/01-mvp-data/prd-01-data-usda.md` | USDA FDC dataset download + PostgreSQL import + ingredient FTS index | status: complete | requires: 01-data-schema |
 - [x] **01-api-auth** | `prd-phases/01-mvp-api/prd-01-api-auth.md` | NextAuth (Auth.js) routes: sign up, sign in, OAuth, JWT sessions, guest sessions, household invites | status: complete | requires: 01-data-schema |
 - [x] **01-api-recipes** | `prd-phases/01-mvp-api/prd-01-api-recipes.md` | Recipe CRUD, URL import (JSON-LD), search, nutrition pipeline (Haiku + USDA) | status: complete | requires: 01-data-usda, 01-api-auth |
-- [ ] **01-api-households** | `prd-phases/01-mvp-api/prd-01-api-households.md` | Household create/join, member management, invite links, guest-add mode | status: pending | requires: 01-api-auth |
+- [x] **01-api-households** | `prd-phases/01-mvp-api/prd-01-api-households.md` | Household create/join, member management, invite links, guest-add mode | status: complete | requires: 01-api-auth |
 - [ ] **01-api-pantry** | `prd-phases/01-mvp-api/prd-01-api-pantry.md` | Pantry CRUD, starter pantry templates, household pantry sync contract | status: pending | requires: 01-api-households |
 - [ ] **01-api-lists** | `prd-phases/01-mvp-api/prd-01-api-lists.md` | Grocery list CRUD + Socket.io real-time mutations + conflict resolution | status: pending | requires: 01-api-households |
 - [ ] **01-api-plans** | `prd-phases/01-mvp-api/prd-01-api-plans.md` | Meal plan CRUD + recipe-to-list auto-generation + weekly calendar | status: pending | requires: 01-api-lists |
