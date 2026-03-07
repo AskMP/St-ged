@@ -16,10 +16,10 @@ max_iterations: 100
 
 | Field | Value |
 |-------|-------|
-| Last completed PRD | 01-api-households |
-| Timestamp | $(date -u "+%Y-%m-%d %H:%M:%S UTC") |
-| Current phase | 0 (Foundation) |
-| Progress | 13 / 38 PRDs complete |
+| Last completed PRD | 01-pages-onboarding |
+| Timestamp | 2026-03-07 14:31:00 UTC |
+| Current phase | 1 (MVP) |
+| Progress | 20 / 38 PRDs complete |
 
 ---
 
@@ -128,13 +128,13 @@ PRDs with `parallel_safe: true` and all `requires` satisfied may be executed con
 - [x] **01-api-auth** | `prd-phases/01-mvp-api/prd-01-api-auth.md` | NextAuth (Auth.js) routes: sign up, sign in, OAuth, JWT sessions, guest sessions, household invites | status: complete | requires: 01-data-schema |
 - [x] **01-api-recipes** | `prd-phases/01-mvp-api/prd-01-api-recipes.md` | Recipe CRUD, URL import (JSON-LD), search, nutrition pipeline (Haiku + USDA) | status: complete | requires: 01-data-usda, 01-api-auth |
 - [x] **01-api-households** | `prd-phases/01-mvp-api/prd-01-api-households.md` | Household create/join, member management, invite links, guest-add mode | status: complete | requires: 01-api-auth |
-- [ ] **01-api-pantry** | `prd-phases/01-mvp-api/prd-01-api-pantry.md` | Pantry CRUD, starter pantry templates, household pantry sync contract | status: pending | requires: 01-api-households |
-- [ ] **01-api-lists** | `prd-phases/01-mvp-api/prd-01-api-lists.md` | Grocery list CRUD + Socket.io real-time mutations + conflict resolution | status: pending | requires: 01-api-households |
-- [ ] **01-api-plans** | `prd-phases/01-mvp-api/prd-01-api-plans.md` | Meal plan CRUD + recipe-to-list auto-generation + weekly calendar | status: pending | requires: 01-api-lists |
-- [ ] **01-api-fulfillment** | `prd-phases/01-mvp-api/prd-01-api-fulfillment.md` | Instacart IDP deep-link construction + Smart Bundling + affiliate attribution | status: pending | requires: 01-api-plans |
-- [ ] **01-ui-pwa** | `prd-phases/01-mvp-ui/prd-01-ui-pwa.md` | PWA shell: Vite config, Workbox SW, A2HS prompt, offline indicator, Dexie setup, sync queue | status: pending | requires: 00f, 00g |
-- [ ] **01-ui-components** | `prd-phases/01-mvp-ui/prd-01-ui-components.md` | Design system components: RecipeCard, GroceryItem, HouseholdAvatar, FilterChip, NutritionBadge | status: pending | requires: 01-ui-pwa |
-- [ ] **01-pages-onboarding** | `prd-phases/01-mvp-pages/prd-01-pages-onboarding.md` | Onboarding flow: skill level, household size, dietary profile, Starter Pantry, A2HS prompt | status: pending | requires: 01-ui-components, 01-api-auth, 01-api-pantry |
+- [x] **01-api-pantry** | `prd-phases/01-mvp-api/prd-01-api-pantry.md` | Pantry CRUD, starter pantry templates, household pantry sync contract | status: complete | requires: 01-api-households |
+- [x] **01-api-lists** | `prd-phases/01-mvp-api/prd-01-api-lists.md` | Grocery list CRUD + Socket.io real-time mutations + conflict resolution | status: complete | requires: 01-api-households |
+- [x] **01-api-plans** | `prd-phases/01-mvp-api/prd-01-api-plans.md` | Meal plan CRUD + recipe-to-list auto-generation + weekly calendar | status: complete | requires: 01-api-lists |
+- [x] **01-api-fulfillment** | `prd-phases/01-mvp-api/prd-01-api-fulfillment.md` | Instacart IDP deep-link construction + Smart Bundling + affiliate attribution | status: complete | requires: 01-api-plans |
+- [x] **01-ui-pwa** | `prd-phases/01-mvp-ui/prd-01-ui-pwa.md` | PWA shell: Vite config, Workbox SW, A2HS prompt, offline indicator, Dexie setup, sync queue | status: complete | requires: 00f, 00g |
+- [x] **01-ui-components** | `prd-phases/01-mvp-ui/prd-01-ui-components.md` | Design system components: RecipeCard, GroceryItem, HouseholdAvatar, FilterChip, NutritionBadge | status: complete | requires: 01-ui-pwa |
+- [x] **01-pages-onboarding** | `prd-phases/01-mvp-pages/prd-01-pages-onboarding.md` | Onboarding flow: skill level, household size, dietary profile, Starter Pantry, A2HS prompt | status: complete | requires: 01-ui-components, 01-api-auth, 01-api-pantry |
 - [ ] **01-pages-recipes** | `prd-phases/01-mvp-pages/prd-01-pages-recipes.md` | Recipe library, search/filter, recipe detail, step-by-step cooking view (Wake Lock), URL import | status: pending | requires: 01-pages-onboarding, 01-api-recipes |
 - [ ] **01-pages-planning** | `prd-phases/01-mvp-pages/prd-01-pages-planning.md` | Weekly calendar, meal assignment, shared grocery list, real-time sync UI, offline-first | status: pending | requires: 01-pages-recipes, 01-api-plans |
 - [ ] **01-pages-fulfillment** | `prd-phases/01-mvp-pages/prd-01-pages-fulfillment.md` | Deliver Me This flow, Instacart IDP deep-link, Smart Bundle upsell, attribution display | status: pending | requires: 01-pages-planning, 01-api-fulfillment |
