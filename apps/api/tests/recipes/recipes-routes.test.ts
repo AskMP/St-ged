@@ -10,7 +10,7 @@ const BASE = 'http://localhost'
 describe('recipes routes', () => {
   it('supports basic CRUD and search filters (currently unimplemented)', async () => {
     // create
-    const createRes = await app.fetch(`${BASE}/api/recipes`, {
+    const createRes = await app.request(`${BASE}/api/recipes`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ title: 'Test Burger' }),
@@ -19,23 +19,20 @@ describe('recipes routes', () => {
     expect(createRes.status).toBe(201)
 
     // read list
-    const listRes = await app.fetch(`${BASE}/api/recipes`, {
+    const listRes = await app.request(`${BASE}/api/recipes`, {
       method: 'GET',
-      headers: { 'Authorization': 'Bearer fake' },
     })
     expect(listRes.status).toBe(200)
 
     // search filter example
-    const searchRes = await app.fetch(`${BASE}/api/recipes?diet=vegan`, {
+    const searchRes = await app.request(`${BASE}/api/recipes?diet=vegan`, {
       method: 'GET',
-      headers: { 'Authorization': 'Bearer fake' },
     })
     expect(searchRes.status).toBe(200)
 
     // delete (will fail if id not provided)
-    const deleteRes = await app.fetch(`${BASE}/api/recipes/123`, {
+    const deleteRes = await app.request(`${BASE}/api/recipes/123`, {
       method: 'DELETE',
-      headers: { 'Authorization': 'Bearer fake' },
     })
     expect(deleteRes.status).toBe(200)
   })

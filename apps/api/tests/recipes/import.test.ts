@@ -13,7 +13,7 @@ describe('recipes import', () => {
       url: 'https://example.com/recipe',
       jsonLd: { '@type': 'Recipe', name: 'Fake' },
     }
-    const res = await app.fetch(`${BASE}/api/recipes/import`, {
+    const res = await app.request(`${BASE}/api/recipes/import`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(payload),
