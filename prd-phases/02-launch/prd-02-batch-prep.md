@@ -52,21 +52,21 @@ Adds batch-prep planning across multiple recipes with combined ingredient lists,
 
 ## Tasks
 
-- [ ] **Task 1: Implement combined-list and sequencing logic** `[BD:STG-161]`
+- [x] **Task 1: Implement combined-list and sequencing logic** `[BD:STG-161]`
   - **Type**: feature
   - **Do**: Build the backend and UI flows for selecting multiple recipes, generating a combined list, and sequencing prep work.
   - **Files**: `apps/api/src/services/`, `apps/web/src/pages/`, `apps/web/src/components/`
   - **Verify**: Integration tests pass once added
   - **Accept**: Users can create a batch-prep session from real recipe data
 
-- [ ] **Task 2: Add batch-prep tests** `[BD:STG-160]`
+- [x] **Task 2: Add batch-prep tests** `[BD:STG-160]`
   - **Type**: task
   - **Do**: Add tests for multi-recipe selection, combined lists, prep sequencing, and portioning output.
   - **Files**: `apps/api/tests/batch-prep/`, `apps/web/tests/e2e/batch-prep.spec.ts`
   - **Verify**: The batch-prep tests pass against the implemented logic
   - **Accept**: Prep-session requirements are confirmed before code changes
 
-- [ ] **Task 3: Refactor portioning and prep-visibility UX** `[BD:STG-162]`
+- [ ] **Task 3: Refactor portioning and prep-visibility UX** `[BD:stg-007]`
   - **Type**: task
   - **Do**: Refine portioning output, sequencing explanations, and prep-state visibility so the feature is understandable mid-session.
   - **Files**: `apps/web/src/components/`, `apps/api/src/services/`

@@ -44,9 +44,18 @@ describe("BatchPrep page", () => {
     await waitFor(() => expect(apiClient.batchPrep.combine).toHaveBeenCalledWith(["r1", "r2"]));
     expect(screen.getByText(/Combined Ingredients/)).toBeInTheDocument();
     expect(screen.getByText(/salt/)).toBeInTheDocument();
+    expect(screen.getByText(/Portion/)).toBeInTheDocument();
     // verify sequence list contains both recipes in order
     const seqItems = screen.getAllByTestId("sequence-item");
     expect(seqItems.map((el) => el.textContent)).toEqual(["Recipe Two", "Recipe One"]);
+
+    // start prep session
+    fireEvent.click(screen.getByTestId("start-prep"));
+    expect(screen.getByTestId("prep-state")).toHaveTextContent("Now cooking: Recipe Two");
+    fireEvent.click(screen.getByTestId("next-recipe"));
+    expect(screen.getByTestId("prep-state")).toHaveTextContent("Now cooking: Recipe One");
+    // after last recipe, Next button replaced with completion text
+    expect(screen.queryByTestId("next-recipe")).toBeNull();
   });
 
   it("shows error when combine fails", async () => {

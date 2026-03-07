@@ -11,6 +11,8 @@ export default function BatchPrep() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [result, setResult] = useState<{ items: { name: string; count: number }[]; sequence: string[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [prepStarted, setPrepStarted] = useState(false);
+  const [prepIndex, setPrepIndex] = useState(0);
 
   useEffect(() => {
     async function load() {
@@ -79,6 +81,12 @@ export default function BatchPrep() {
       {result && (
         <div className="mt-6" data-testid="result">
           <h2 className="text-xl font-semibold">Combined Ingredients</h2>
+          <p className="mt-2 text-sm text-gray-600">
+            You’ve selected <strong>{result.sequence.length} recipes</strong>. Portion
+            ingredients based on each recipe’s servings, and when you’re ready to
+            start cooking, hit the button below and we’ll walk you through the
+            sequence one recipe at a time.
+          </p>
           <ul className="list-disc ml-6">
             {result.items.map((it) => (
               <li key={it.name}>{it.name} (in {it.count} recipes)</li>
@@ -92,6 +100,41 @@ export default function BatchPrep() {
               </li>
             ))}
           </ol>
+
+          {/* prep session controls */}
+          {prepStarted ? (
+            <div className="mt-4" data-testid="prep-state">
+              <p>
+                Now cooking:{' '}
+                <strong>
+                  {recipes.find((r) => r.id === result.sequence[prepIndex])?.name ||
+                    result.sequence[prepIndex]}
+                </strong>
+              </p>
+              {prepIndex < result.sequence.length - 1 ? (
+                <button
+                  className="mt-2 px-3 py-1 bg-green-500 text-white rounded"
+                  onClick={() => setPrepIndex((i) => i + 1)}
+                  data-testid="next-recipe"
+                >
+                  Next Recipe
+                </button>
+              ) : (
+                <p className="mt-2 text-green-600">All done!</p>
+              )}
+            </div>
+          ) : (
+            <button
+              className="mt-4 px-4 py-2 bg-yellow-500 text-black rounded"
+              onClick={() => {
+                setPrepStarted(true);
+                setPrepIndex(0);
+              }}
+              data-testid="start-prep"
+            >
+              Start Prep Session
+            </button>
+          )}
         </div>
       )}
     </div>
