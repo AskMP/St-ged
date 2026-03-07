@@ -143,9 +143,11 @@ PRDs with `parallel_safe: true` and all `requires` satisfied may be executed con
 
 ### Group 2: Launch (Should Have)
 
-- [ ] **02-fridge-clearance** | `prd-phases/02-launch/prd-02-fridge-clearance.md` | AI Fridge-Clearance: pantry input, expiration tracking, Claude Haiku recipe matching (F11) | status: pending | requires: 01-verify-runtime |
-- [ ] **02-cost-serving** | `prd-phases/02-launch/prd-02-cost-serving.md` | Cost-per-serving display, budget targets, pantry-aware costing (F12) | status: pending | requires: 01-verify-runtime |
-- [ ] **02-potluck** | `prd-phases/02-launch/prd-02-potluck.md` | Potluck & Event Planner: event creation, slot claiming (no login), real-time locks (F13) | status: pending | requires: 01-verify-runtime |
+- [x] **02-fridge-clearance** | `prd-phases/02-launch/prd-02-fridge-clearance.md` | AI Fridge-Clearance: pantry input, expiration tracking, Claude Haiku recipe matching (F11) | status: complete | requires: 01-verify-runtime |
+
+Current State: Last completed PRD = 02-potluck, progress = 28 / 38 PRDs complete
+- [x] **02-cost-serving** | `prd-phases/02-launch/prd-02-cost-serving.md` | Cost-per-serving display, budget targets, pantry-aware costing (F12) | status: complete | requires: 01-verify-runtime |
+- [x] **02-potluck** | `prd-phases/02-launch/prd-02-potluck.md` | Potluck & Event Planner: event creation, slot claiming (no login), real-time locks (F13) | status: complete | requires: 01-verify-runtime |
 - [ ] **02-batch-prep** | `prd-phases/02-launch/prd-02-batch-prep.md` | Batch Prep Mode: multi-recipe selection, cook sequencing, combined list, portioning view (F14) | status: pending | requires: 01-verify-runtime |
 - [ ] **02-dietary-adaptation** | `prd-phases/02-launch/prd-02-dietary-adaptation.md` | Dietary Adaptation Mode: Make This Vegan/Dairy-Free, whole-recipe substitution (F15) | status: pending | requires: 01-verify-runtime |
 - [ ] **02-coaching** | `prd-phases/02-launch/prd-02-coaching.md` | In-Step Contextual Coaching: technique glossary, ingredient explainers, inline tap-to-reveal (F16) | status: pending | requires: 01-verify-runtime |

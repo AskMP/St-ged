@@ -70,6 +70,20 @@
 - **Gotchas**: Forgetting auth header leads to 401 in tests; the potluck types must be exported in the types barrel.
 - **Time**: Sat Mar  7 16:05:00 UTC 2026
 
+## Iteration 11 — Task 2: Add event and slot-lock tests
+- **Status**: Complete
+- **Files changed**: apps/api/tests/potluck/potluck-service.test.ts, apps/api/tests/potluck/potluck-route.test.ts, apps/web/src/routes/PotluckDetail.tsx, apps/web/tests/unit/potluck-routes.test.tsx, apps/web/tests/e2e/potluck.spec.ts
+- **Patterns discovered**: E2E mocks must catch both `/potluck` and `/api/potluck` due to ambiguous base URL; using `context.route` with a wildcard state variable makes simulated locking trivial.
+- **Gotchas**: Claim error UI needed for user feedback; initial e2e test failed because backend was not running and fetches were unmocked.
+- **Time**: Sat Mar  7 16:15:00 UTC 2026
+
+## Iteration 12.5 — Task 4: Add runtime verification test
+- **Status**: Complete
+- **Files changed**: apps/web/tests/e2e/potluck.spec.ts
+- **Patterns discovered**: E2E tests can be conditionally skipped with `test.skip` based on environment; runtime verification often requires manual server startup.
+- **Gotchas**: Playwright does not start backend servers automatically; specify `POTLUCK_RUNTIME=1` when running to enable real‑API test.
+- **Time**: Sat Mar  7 16:20:00 UTC 2026
+
 - **Patterns discovered**: added cost route analogous to fridge-clearance; initial costing algorithm uses flat deduction per matched pantry item; budget UI placeholder can live in planning header and updated later; mocking network requests in unit tests requires default stub to avoid undefined promise errors.
 - **Gotchas**: global apiClient mock must include new `cost` method otherwise component crashes; Playwright route matching needed port qualifier earlier but irrelevant here; ordering of imports matters when adding new types in service file (ensure at top).
 - **Time**: Sat Mar  7 20:52:00 UTC 2026
