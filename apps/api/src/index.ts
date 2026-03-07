@@ -1,19 +1,21 @@
 import { Hono } from 'hono'
 import http from 'node:http'
 import { Pool } from 'pg'
-import { createSocketIOserver, getIO } from './lib/socket'
 import { env } from './lib/env'
+import { createSocketIOserver } from './lib/socket'
 import { corsMiddleware } from './middleware/cors'
 import { rateLimitMiddleware } from './middleware/rateLimit'
 import authRouter from './routes/auth'
+import batchRouter from './routes/batch-prep'
+import dietaryAdaptationRouter from './routes/dietary-adaptation'
+import fridgeClearanceRouter from './routes/fridge-clearance'
 import fulfillmentRouter from './routes/fulfillment'
 import householdsRouter from './routes/households'
 import listsRouter from './routes/lists'
 import pantryRouter from './routes/pantry'
-import fridgeClearanceRouter from './routes/fridge-clearance'
 import plansRouter from './routes/plans'
-import recipesRouter from './routes/recipes'
 import potluckRouter from './routes/potluck'
+import recipesRouter from './routes/recipes'
 
 const pool = new Pool({
   connectionString: env.DATABASE_URL,
@@ -72,6 +74,7 @@ app.get('/health', async (c) => {
 
 app.route('/api/auth', authRouter)
 app.route('/api/recipes', recipesRouter)
+app.route('/api/batch-prep', batchRouter)
 app.route('/api/households', householdsRouter)
 app.route('/api', pantryRouter)
 app.route('/api', listsRouter)
@@ -79,6 +82,7 @@ app.route('/api', plansRouter)
 app.route('/api', fridgeClearanceRouter)
 app.route('/api/potluck', potluckRouter)
 app.route('/api/fulfillment', fulfillmentRouter)
+app.route('/api/dietary', dietaryAdaptationRouter)
 
 // only start the HTTP server when not running under the test runner.
 // Vitest sets NODE_ENV=test; by skipping the listen call we avoid EADDRINUSE

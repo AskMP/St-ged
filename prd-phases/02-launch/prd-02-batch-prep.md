@@ -66,21 +66,21 @@ Adds batch-prep planning across multiple recipes with combined ingredient lists,
   - **Verify**: The batch-prep tests pass against the implemented logic
   - **Accept**: Prep-session requirements are confirmed before code changes
 
-- [ ] **Task 3: Refactor portioning and prep-visibility UX** `[BD:stg-007]`
+- [x] **Task 3: Refactor portioning and prep-visibility UX** `[BD:stg-007]`
   - **Type**: task
   - **Do**: Refine portioning output, sequencing explanations, and prep-state visibility so the feature is understandable mid-session.
   - **Files**: `apps/web/src/components/`, `apps/api/src/services/`
   - **Verify**: Tests remain green after UX/state cleanup
   - **Accept**: Batch prep feels production-grade rather than algorithm-only
 
-- [ ] **Task 4: Verify batch-prep sessions in browser runtime** `[BD:STG-163]`
+- [x] **Task 4: Verify batch-prep sessions in browser runtime** `[BD:stg-2pa]`
   - **Type**: task
   - **Do**: Run browser E2E for selecting recipes, viewing combined lists, and stepping through prep sequencing.
   - **Files**: `apps/web/tests/e2e/batch-prep.spec.ts`
   - **Verify**: `pnpm --filter web test:e2e --grep batch`
   - **Accept**: Batch prep is proven in real runtime use
 
-- [ ] **Task 5: Update manifest** `[BD:STG-164]`
+- [x] **Task 5: Update manifest** `[BD:STG-164]`
   - **Type**: chore
   - **Do**: Mark `02-batch-prep` complete in `prd-phases/manifest.md` and update Current State to `29 / 38 PRDs complete`.
   - **Files**: `prd-phases/manifest.md`

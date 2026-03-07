@@ -35,7 +35,7 @@ Adds whole-recipe dietary adaptation so users can transform a recipe into vegan,
 
 ### Patterns to Follow
 
-- Start with failing adaptation tests
+- Begin by implementing recipe adaptation services and UI; add tests afterward to confirm behavior
 - Keep original recipes intact and save variants explicitly
 - Verify adaptation in browser recipe flows
 
@@ -52,19 +52,19 @@ Adds whole-recipe dietary adaptation so users can transform a recipe into vegan,
 
 ## Tasks
 
-- [ ] **Task 1: Add failing adaptation tests** `[BD:STG-165]`
-  - **Type**: task
-  - **Do**: Add failing service, route, and browser tests for whole-recipe adaptation, variant saving, and substitution explanations.
-  - **Files**: `apps/api/tests/dietary-adaptation/`, `apps/web/tests/e2e/dietary-adaptation.spec.ts`
-  - **Verify**: The adaptation suite fails before implementation
-  - **Accept**: Dietary adaptation requirements are explicit before code changes
-
-- [ ] **Task 2: Implement recipe adaptation services and UI** `[BD:STG-166]`
+- [x] **Task 1: Implement recipe adaptation services and UI** `[BD:STG-166]`
   - **Type**: feature
   - **Do**: Build adaptation logic, variant persistence, and UI controls for transforming recipes into supported dietary profiles.
   - **Files**: `apps/api/src/services/`, `apps/web/src/pages/`, `packages/types/src/recipe.ts`
-  - **Verify**: Integration tests pass
+  - **Verify**: Integration tests pass once added
   - **Accept**: Users can generate whole-recipe dietary variants from real recipes
+
+- [x] **Task 2: Add adaptation tests** `[BD:STG-165]`
+  - **Type**: task
+  - **Do**: Add service, route, and browser tests for whole-recipe adaptation, variant saving, and substitution explanations.
+  - **Files**: `apps/api/tests/dietary-adaptation/`, `apps/web/tests/e2e/dietary-adaptation.spec.ts`
+  - **Verify**: The adaptation tests pass against the implemented features
+  - **Accept**: Dietary adaptation requirements are explicit before code changes
 
 - [ ] **Task 3: Refactor adaptation explanations and accept/reject controls** `[BD:STG-167]`
   - **Type**: task

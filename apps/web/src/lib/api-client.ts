@@ -173,4 +173,21 @@ export const apiClient = {
       })
     },
   },
+  dietary: {
+    adapt(recipeId: string, profile: string) {
+      return request<any>('/dietary/adapt', {
+        method: 'POST',
+        body: JSON.stringify({ recipeId, profile }),
+      })
+    },
+    getProfiles() {
+      return request<{ profiles: string[] }>('/dietary/profiles')
+    },
+    explain(substitution: { original: string; replacement: string; reason: string }) {
+      return request<{ explanation: string }>('/dietary/explain', {
+        method: 'POST',
+        body: JSON.stringify({ substitution }),
+      })
+    },
+  },
 }
