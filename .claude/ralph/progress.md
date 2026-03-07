@@ -23,6 +23,13 @@
 - **Gotchas**: Playwright placeholder locator API differs from testing-library; mocking modules with vi.mock requires exact module path match
 - **Time**: Sat Mar  7 14:39:00 UTC 2026
 
+## Iteration 6 -- MVP Verification (stg-134..stg-138)
+- **Status**: Complete
+- **Files changed**: apps/web/tests/e2e/personas/jordan.spec.ts, maya.spec.ts, darius.spec.ts, apps/web/tests/e2e/helpers/fixtures.ts, apps/web/src/components/OfflineBanner.tsx, apps/web/src/routes/Recipes.tsx, prd-phases/01-mvp-verify/prd-01-verify.md, prd-phases/manifest.md
+- **Patterns discovered**: Use page.addInitScript (not page.evaluate) to set localStorage BEFORE page load -- evaluate only affects already-mounted stores; RecipeDetail/loading/error states must ALL carry data-testid for tests to work without a live API; page.route() mocks are set up BEFORE page.goto() and persist across navigations; OfflineBanner testid was missing -- always add testids to components referenced in tests
+- **Gotchas**: Zustand persist reads localStorage only at store initialization (mount time) -- page.evaluate to set localStorage after mount doesn't update the store; RecipeDetail returns early without testid in loading+error states causing test failures; route mocking with **/recipes conflicts with **/recipes/r-pasta if order is wrong; injectOnboardingComplete step must be 'done' not 'complete' (invalid OnboardingStep)
+- **Time**: Sat Mar  7 15:20:00 UTC 2026
+
 ## Iteration 5 -- Fulfillment page (stg-129..stg-133)
 - **Status**: Complete
 - **Files changed**: apps/web/src/routes/FulfillmentPage.tsx, apps/web/src/lib/api-client.ts, apps/web/src/main.tsx, apps/web/src/index.css, apps/web/vite.config.ts, apps/web/src/App.tsx, apps/web/src/routes/Planning.tsx, apps/web/tests/unit/fulfillment-route.test.tsx, apps/web/tests/e2e/fulfillment.spec.ts, prd-phases/01-mvp-pages/prd-01-pages-fulfillment.md, prd-phases/manifest.md
