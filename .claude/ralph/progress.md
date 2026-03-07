@@ -135,3 +135,29 @@
 - **Patterns discovered**: Service tests cover adaptRecipe for multiple profiles, getAvailableProfiles, explainSubstitution.
 - **Gotchas**: None significant.
 - **Time**: Sat Mar  7 22:25:00 UTC 2026
+## Iteration 21 — Task 4: Verify coaching within browser cooking flows (STG-173)
+- **Status**: Complete
+- **Files changed**: apps/web/tests/e2e/coaching.spec.ts, apps/web/tests/e2e/helpers/fixtures.ts, prd-phases/manifest.md
+- **Patterns discovered**: When mocking recipes, ensure step text contains accented glossary terms for `findTermsInText`; Playwright selectors needed filter-by-text and navigation between steps (Next button) to reach term. Tooltip uses `data-testid` markers for reliable detection.
+- **Gotchas**: The cooking view defaults to step 0; desired term was on step 1, so test must click Next. Accents may be stripped in test, so regex `/saute/i` works better than exact text. Mock fixture modifications are part of this iteration.
+- **Time**: Sat Mar  7 2026
+
+## Iteration 22 — Task 1 & 2: Implement household cost splitting & rotation and add tests (STG-176, STG-175)
+- **Status**: Complete
+- **Files changed**: packages/types/src/household-ops.ts, packages/types/src/index.ts, apps/api/src/services/household-service.ts, apps/api/src/routes/households.ts, apps/api/tests/household-ops/household-ops-service.test.ts, apps/api/tests/household-ops/household-ops-route.test.ts, apps/web/src/routes/HouseholdOps.tsx, apps/web/src/App.tsx, apps/web/src/lib/api-client.ts, apps/web/tests/unit/household-ops.test.tsx, apps/web/tests/e2e/household-ops.spec.ts, prd-phases/02-launch/prd-02-household-ops.md
+- **Patterns discovered**: Use Playwright route intercepts judiciously; generic mocks may return empty objects causing component errors (guard `rotation?.members` check needed). BaseMock helper simplifies common intercepts. Frontend forms can be added as standalone pages with minimal state logic.
+- **Gotchas**: Always guard optional object fields (`rotation.members`) before calling `.join`. Playwright can crash if component throws; add `page.on('pageerror')` when debugging. Unit tests need to mock onboarding store earlier.
+- **Time**: Sat Mar  7 2026
+## Iteration 19 — Task 3: Refactor adaptation explanations and accept/reject controls (STG-167)
+- **Status**: Complete
+- **Files changed**: apps/web/src/routes/Recipes.tsx, apps/web/src/lib/api-client.ts
+- **Patterns discovered**: Added checkbox toggles for each substitution, reason display, Save Adapted Recipe button to persist variants.
+- **Gotchas**: Had to add recipes.create method to api-client.
+- **Time**: Sat Mar  7 22:37:00 UTC 2026
+
+## Iteration 20 — Task 4: Verify adaptation flows in browser runtime (STG-168)
+- **Status**: Complete
+- **Files changed**: apps/web/tests/e2e/dietary-adaptation.spec.ts
+- **Patterns discovered**: Created E2E tests with mocked API calls - adapt recipe and show substitutions, toggle individual substitutions.
+- **Gotchas**: Route mocking needs full URL 'http://localhost:3000/**' to intercept API calls.
+- **Time**: Sat Mar  7 22:45:00 UTC 2026

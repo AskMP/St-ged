@@ -7,6 +7,7 @@ import {
   isWakeLockSupported,
   releaseWakeLock,
 } from "../lib/wake-lock";
+import { CoachedStep } from "../components/CoachedStep";
 
 // ---- Shared helpers ----
 
@@ -608,7 +609,7 @@ export function CookingView() {
           data-testid="cooking-step"
           className="text-xl font-medium leading-relaxed max-w-md"
         >
-          {steps[step]}
+          <CoachedStep step={steps[step] || ''} />
         </p>
       </div>
 

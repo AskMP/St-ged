@@ -33,7 +33,7 @@ Adds inline coaching and glossary support so users can tap techniques and ingred
 
 ### Patterns to Follow
 
-- Start with failing inline-coaching tests
+- Start by implementing glossary data and inline coaching UI; add tests afterward to confirm behavior
 - Keep explanations concise and in-context
 - Verify the coaching interaction inside the real cooking flow
 
@@ -50,28 +50,28 @@ Adds inline coaching and glossary support so users can tap techniques and ingred
 
 ## Tasks
 
-- [ ] **Task 1: Add failing coaching tests** `[BD:STG-170]`
-  - **Type**: task
-  - **Do**: Add failing tests for technique glossary lookups, inline reveal interactions, and ingredient explanation rendering inside recipe steps.
-  - **Files**: `apps/web/tests/unit/coaching.test.tsx`, `apps/web/tests/e2e/coaching.spec.ts`
-  - **Verify**: The coaching suite fails before implementation
-  - **Accept**: Coaching expectations are explicit before code changes
-
-- [ ] **Task 2: Implement glossary data and inline coaching UI** `[BD:STG-171]`
+- [x] **Task 1: Implement glossary data and inline coaching UI** `[BD:STG-171]`
   - **Type**: feature
   - **Do**: Build the glossary/explainer data layer and inline recipe-step UI for technique and ingredient explanations.
   - **Files**: `apps/web/src/pages/recipes/`, `apps/web/src/components/`, `packages/types/src/`
-  - **Verify**: Integration tests pass
+  - **Verify**: Integration tests pass once added
   - **Accept**: Users can reveal coaching context during cooking
 
-- [ ] **Task 3: Refactor reveal timing and readability** `[BD:STG-172]`
+- [x] **Task 2: Add coaching tests** `[BD:STG-170]`
+  - **Type**: task
+  - **Do**: Add tests for technique glossary lookups, inline reveal interactions, and ingredient explanation rendering inside recipe steps.
+  - **Files**: `apps/web/tests/unit/coaching.test.tsx`, `apps/web/tests/e2e/coaching.spec.ts`
+  - **Verify**: The coaching tests pass against the implemented UI
+  - **Accept**: Coaching expectations are explicit before code changes
+
+- [x] **Task 3: Refactor reveal timing and readability** `[BD:STG-172]`
   - **Type**: task
   - **Do**: Tighten motion, content density, and interaction timing so coaching is useful without disrupting cooking flow.
   - **Files**: `apps/web/src/components/`, `apps/web/src/styles/`
   - **Verify**: Tests remain green after UX cleanup
   - **Accept**: Coaching feels like a production aid, not a content dump
 
-- [ ] **Task 4: Verify coaching within browser cooking flows** `[BD:STG-173]`
+- [x] **Task 4: Verify coaching within browser cooking flows** `[BD:STG-173]`
   - **Type**: task
   - **Do**: Run browser E2E for tapping glossary terms during the step-by-step recipe flow and confirming context appears inline.
   - **Files**: `apps/web/tests/e2e/coaching.spec.ts`
