@@ -17,7 +17,7 @@ const recipesRouter = new Hono()
   // endpoints can be exercised without needing a full login flow.
   .use('*', process.env.NODE_ENV === 'test' ? optionalAuth : requireAuth)
   .get('/', async (c) => {
-    const householdId = c.req.ctx?.auth?.user?.householdId || ''
+    const householdId = (c.req as any).ctx?.auth?.user?.householdId || ''
     // simple filter parsing; real implementation will be more complex
     const filters: Record<string, string> = {}
     const diet = c.req.query('diet')
