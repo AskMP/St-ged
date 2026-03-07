@@ -29,10 +29,16 @@ This manifest coordinates a multi-PRD build. Each PRD is a self-contained unit o
 
 ### Starting / Resuming
 
-1. Read this manifest
-2. Find the first `status: pending` entry in the PRD Registry whose `requires` are all `status: complete`
-3. Before editing files, create or verify every embedded BD task in that PRD using `bd create --id <embedded-id> ...` so task IDs match the PRD exactly
-4. Open that PRD file and execute its tasks sequentially using a strict red/green/refactor loop
+1. Read this manifest — **it is the jumping‑off point, not a checklist you manually pick from.**
+   You can run `/ralph prd-phases/manifest.md` and the agent will automatically select
+   the first eligible pending PRD for you; there is no need to manually scan or
+   choose individual files.
+2. (Implementation detail) Internally the agent finds the first `status: pending`
+   entry in the PRD Registry whose `requires` are all `status: complete`.
+3. Before editing files, create or verify every embedded BD task in that PRD using
+   `bd create --id <embedded-id> ...` so task IDs match the PRD exactly
+4. Open that PRD file and execute its tasks sequentially using a strict
+   red/green/refactor loop
 5. The final task in every PRD updates this manifest (marks the entry `status: complete`)
 6. Return to step 2
 
@@ -98,20 +104,20 @@ PRDs with `parallel_safe: true` and all `requires` satisfied may be executed con
 
 ### Group 0: Foundation
 
-- [ ] **00a** | `prd-phases/00-foundation/prd-00a-task-management.md` | Task management setup (bd init + verification) | status: complete | requires: none |
-- [ ] **00b** | `prd-phases/00-foundation/prd-00b-project-init.md` | Turborepo monorepo init, workspace config, dev servers | status: complete | requires: 00a |
-- [ ] **00c** | `prd-phases/00-foundation/prd-00c-code-quality.md` | ESLint, Prettier, Husky, lint-staged, TypeScript strict | status: complete | requires: 00b |
-- [ ] **00d** | `prd-phases/00-foundation/prd-00d-database.md` | PostgreSQL + Drizzle schema + migrations + NextAuth (Auth.js) + USDA FDC dataset | status: complete | requires: 00b |
+- [x] **00a** | `prd-phases/00-foundation/prd-00a-task-management.md` | Task management setup (bd init + verification) | status: complete | requires: none |
+- [x] **00b** | `prd-phases/00-foundation/prd-00b-project-init.md` | Turborepo monorepo init, workspace config, dev servers | status: complete | requires: 00a |
+- [x] **00c** | `prd-phases/00-foundation/prd-00c-code-quality.md` | ESLint, Prettier, Husky, lint-staged, TypeScript strict | status: complete | requires: 00b |
+- [x] **00d** | `prd-phases/00-foundation/prd-00d-database.md` | PostgreSQL + Drizzle schema + migrations + NextAuth (Auth.js) + USDA FDC dataset | status: complete | requires: 00b |
 - [x] **00e** | `prd-phases/00-foundation/prd-00e-api-foundation.md` | Hono server + Socket.io setup + route skeleton + env validation | status: complete | requires: 00d |
-- [ ] **00f** | `prd-phases/00-foundation/prd-00f-styling.md` | Tailwind CSS v4 + Radix UI setup + frontend-design skill config | status: complete | requires: 00b |
-- [ ] **00g** | `prd-phases/00-foundation/prd-00g-testing.md` | Vitest config + Playwright config + browser/offline/device verification baseline | status: complete | requires: 00e, 00f |
-- [ ] **00h** | `prd-phases/00-foundation/prd-00h-cicd-deploy.md` | GitHub Actions + Docker + Vercel config + Railway config | status: complete | requires: 00c, 00g |
+- [x] **00f** | `prd-phases/00-foundation/prd-00f-styling.md` | Tailwind CSS v4 + Radix UI setup + frontend-design skill config | status: complete | requires: 00b |
+- [x] **00g** | `prd-phases/00-foundation/prd-00g-testing.md` | Vitest config + Playwright config + browser/offline/device verification baseline | status: complete | requires: 00e, 00f |
+- [x] **00h** | `prd-phases/00-foundation/prd-00h-cicd-deploy.md` | GitHub Actions + Docker + Vercel config + Railway config | status: complete | requires: 00c, 00g |
 
 ### Group 1: MVP (Must Have)
 
-- [ ] **01-data-schema** | `prd-phases/01-mvp-data/prd-01-data-schema.md` | Full Drizzle schema: users, households, recipes, lists, plans, pantry, sync queue | status: complete | requires: 00d |
-- [ ] **01-data-usda** | `prd-phases/01-mvp-data/prd-01-data-usda.md` | USDA FDC dataset download + PostgreSQL import + ingredient FTS index | status: complete | requires: 01-data-schema |
-- [ ] **01-api-auth** | `prd-phases/01-mvp-api/prd-01-api-auth.md` | NextAuth (Auth.js) routes: sign up, sign in, OAuth, JWT sessions, guest sessions, household invites | status: complete | requires: 01-data-schema |
+- [x] **01-data-schema** | `prd-phases/01-mvp-data/prd-01-data-schema.md` | Full Drizzle schema: users, households, recipes, lists, plans, pantry, sync queue | status: complete | requires: 00d |
+- [x] **01-data-usda** | `prd-phases/01-mvp-data/prd-01-data-usda.md` | USDA FDC dataset download + PostgreSQL import + ingredient FTS index | status: complete | requires: 01-data-schema |
+- [x] **01-api-auth** | `prd-phases/01-mvp-api/prd-01-api-auth.md` | NextAuth (Auth.js) routes: sign up, sign in, OAuth, JWT sessions, guest sessions, household invites | status: complete | requires: 01-data-schema |
 - [ ] **01-api-recipes** | `prd-phases/01-mvp-api/prd-01-api-recipes.md` | Recipe CRUD, URL import (JSON-LD), search, nutrition pipeline (Haiku + USDA) | status: pending | requires: 01-data-usda, 01-api-auth |
 - [ ] **01-api-households** | `prd-phases/01-mvp-api/prd-01-api-households.md` | Household create/join, member management, invite links, guest-add mode | status: pending | requires: 01-api-auth |
 - [ ] **01-api-pantry** | `prd-phases/01-mvp-api/prd-01-api-pantry.md` | Pantry CRUD, starter pantry templates, household pantry sync contract | status: pending | requires: 01-api-households |
