@@ -8,6 +8,7 @@ export default function PotluckDetail() {
   const [event, setEvent] = useState<PotluckEvent | null>(null)
   const [loading, setLoading] = useState(false)
   const [guestName, setGuestName] = useState('')
+  const [error, setError] = useState<string | null>(null)
 
   const load = async () => {
     if (!id) return
@@ -28,12 +29,13 @@ export default function PotluckDetail() {
 
   const handleClaim = async (slotId: string) => {
     if (!id || !guestName) return
+    setError(null)
     try {
       await apiClient.potluck.claim(id, slotId, guestName)
       setGuestName('')
       load()
     } catch {
-      // ignore
+      setError('Unable to claim slot – it may have been taken')
     }
   }
 
@@ -44,7 +46,8 @@ export default function PotluckDetail() {
     <div className="max-w-3xl mx-auto py-6 px-4">
       <h1 className="text-2xl font-bold mb-4">{event.title || '(untitled)'}</h1>
       <ul className="space-y-2">
-        {event.slots.map((slot) => (
+        {error && <p data-testid="claim-error" className="text-red-500 mb-4">{error}</p>}
+      {event.slots.map((slot) => (
           <li key={slot.id} className="border p-3 rounded flex justify-between items-center">
             <span>{slot.description || 'slot'}</span>
             {slot.guestName ? (
