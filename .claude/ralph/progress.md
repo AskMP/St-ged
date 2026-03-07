@@ -43,3 +43,11 @@
 - **Patterns discovered**: getMondayOfWeek(new Date()) date calculation must be replicated in unit test mock data or tests fail on wrong weeks -- always compute dynamic dates from the same function as the component; socket.io-client must be installed in the web package; offline E2E test uses page.context().route() to block API requests
 - **Gotchas**: socket.io-client not in web deps by default -- run pnpm --filter web add socket.io-client; E2E offline test using context.route() to block requests shows graceful fallback (loading indicator)
 - **Time**: Sat Mar  7 14:47:00 UTC 2026
+
+## Iteration 7 -- Runtime Validation (stg-139..stg-144)
+- **Status**: Complete
+- **Files changed**: apps/web/tests/e2e/runtime.spec.ts, apps/web/tests/e2e/performance.spec.ts, prd-phases/01-mvp-verify/prd-01-verify-runtime.md, prd-phases/manifest.md
+- **Patterns discovered**: page.route('**/recipes') intercepts page navigation requests too (not just API calls) -- use route-specific patterns or no mocks in route stability tests; `__dirname` not available in ESM Playwright tests -- use `import.meta.url` + fileURLToPath; VitePWA manifest link not injected in dev mode -- make manifest test conditional with fallback
+- **Gotchas**: Route mocks matching page URLs (e.g., `**/recipes`) intercept browser navigation requests and return JSON instead of HTML; `test.fail(true, msg)` marks expected-to-fail -- if test passes it reports as unexpected pass (failure); ADB had no device attached -- mobile smoke skipped and recorded as stg-141 blocker
+- **Time**: Sat Mar  7 16:00:00 UTC 2026
+- 107/107 E2E + 59/59 unit tests pass; build produces manifest.webmanifest + sw.js; bundle 395kB (128kB gzip)
