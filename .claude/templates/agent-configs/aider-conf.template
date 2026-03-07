@@ -1,0 +1,22 @@
+# Aider configuration for YOUR_PROJECT_NAME
+# See AGENTS.md for complete project configuration
+
+# Read AGENTS.md and CONVENTIONS.md for project context
+read:
+  - AGENTS.md
+  - CONVENTIONS.md
+
+# Auto-commit with conventional commit messages
+auto-commits: true
+commit-prompt: "Generate a conventional commit message (feat/fix/chore/refactor/test/docs) that describes the change concisely."
+
+# Testing
+test-cmd: "TODO_TEST_COMMAND"
+auto-test: true
+
+# Lint
+lint-cmd: "TODO_LINT_COMMAND"
+auto-lint: true
+
+# Model preferences
+# Configure your preferred model here

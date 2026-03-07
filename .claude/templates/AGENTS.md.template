@@ -1,0 +1,120 @@
+# AGENTS.md — Universal Project Configuration
+
+This file is the agent-agnostic project configuration. It contains all information any AI coding agent needs to understand and work with this project. No tool-specific syntax — pure markdown.
+
+## Project Overview
+
+**Name**: YOUR_PROJECT_NAME
+**Description**: TODO: Describe your project
+**Language(s)**: TODO: e.g., TypeScript, Python, Go
+**Framework(s)**: TODO: e.g., Next.js, FastAPI, Gin
+
+## Tech Stack
+
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| TODO | TODO | TODO |
+
+## Project Structure
+
+```
+TODO: Add your project structure
+```
+
+## Coding Conventions
+
+- TODO: Naming conventions (e.g., camelCase for TS, snake_case for Python)
+- TODO: File organization rules
+- TODO: Import ordering
+- TODO: Error handling patterns
+
+## Testing
+
+- **Test runner**: TODO (e.g., vitest, pytest, go test)
+- **Test location**: TODO (e.g., `__tests__/`, alongside source, `tests/`)
+- **Run command**: TODO (e.g., `npm test`, `pytest`, `go test ./...`)
+- **Type check**: `{{type_check_command}}`
+- **Coverage target**: TODO (e.g., 80%)
+
+## Build & Run
+
+```bash
+# Install dependencies
+TODO
+
+# Run development server
+TODO
+
+# Build for production
+TODO
+
+# Run tests
+TODO
+```
+
+## Services
+
+| Service | Port | Purpose |
+|---------|------|---------|
+| TODO | TODO | TODO |
+
+## Task Management
+
+- **Task CLI**: {{task_cli_name}}
+- **Task data path**: {{task_data_path}}
+- **Task ID prefix**: TODO (e.g., `MYAPP`)
+- **Branch prefix**: TODO (e.g., `myapp`)
+- **Branch format**: `<prefix>-<task-id>/<description>`
+
+{{task_cli_exclusivity_note}}
+
+## Development Workflow
+
+### Branch Rules
+
+- Always create a feature branch before starting work
+- Branch naming: `<prefix>-<task-id>/<short-description>`
+- Never commit directly to main/master
+- One task per branch — keep changes atomic
+
+### Commit Rules
+
+- Atomic commits: one logical change per commit
+- Conventional commit messages: `type(scope): description`
+- Types: feat, fix, chore, refactor, test, docs, style, perf, ci
+- Always run tests before committing
+- Always run linting before committing
+
+### Task Workflow
+
+1. Check for an assigned/in-progress task before starting new work
+2. Set task to in-progress when starting
+3. Create a feature branch from main
+4. Implement the task (test-first when possible)
+5. Verify all tests pass and lint is clean
+6. Commit with a descriptive message referencing the task ID
+7. Close the task when complete
+8. Open a PR if the project uses pull requests
+
+## Agent Instructions
+
+These instructions apply to any AI coding agent working on this project:
+
+- Read this file and the project's main config file before making changes
+- Follow the coding conventions defined above
+- Run tests after every significant change
+- Do not modify files outside the scope of the current task
+- Check for existing patterns before introducing new ones
+- Prefer editing existing files over creating new ones
+- Do not add dependencies without justification
+- When in doubt, ask — do not guess at requirements
+
+## Deployment
+
+- **Target**: TODO (e.g., Vercel, Railway, Docker, AWS)
+- **CI/CD**: TODO (e.g., GitHub Actions, GitLab CI)
+- **Environment variables**: TODO (e.g., `.env.local` for dev, platform dashboard for prod)
+
+## Project-Specific Rules
+
+- TODO: Add project-specific rules if needed

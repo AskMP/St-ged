@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "_comment": "Claude Code project-level settings. Copy to .claude/settings.json and customize.",
+
+  "hooks": {
+    "PreToolUse": [
+      {
+        "_comment": "Block Write/Edit on main branch",
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/check-branch.sh"
+          }
+        ]
+      },
+      {
+        "_comment": "Warn on large file reads without line range",
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/large-file-guard.sh"
+          }
+        ]
+      },
+      {
+        "_comment": "Validate commits, check coverage, test before push, block dangerous commands",
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/check-commit-msg.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/check-coverage.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/check-tests-before-push.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/block-dangerous-commands.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "_comment": "Auto-format and log edits after Write/Edit",
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/auto-format.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/log-edits.sh"
+          }
+        ]
+      },
+      {
+        "_comment": "Auto-log commit info to task tracker",
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/auto-task-note.sh"
+          }
+        ]
+      },
+      {
+        "_comment": "Ralph learning capture — logs test/build outcomes to .claude/ralph/activity.log (only active when .claude/ralph/ exists)",
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/ralph-progress.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

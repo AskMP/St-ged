@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+
+  "permissions": {
+    "deny": [
+      "Bash(rm -rf /:*)",
+      "Bash(rm -rf ~:*)",
+      "Bash(chmod 777:*)",
+      "Write(.env)",
+      "Edit(.env)",
+      "Write(.env.local)",
+      "Edit(.env.local)",
+      "Write(.env.production)",
+      "Edit(.env.production)"
+    ],
+    "allow": [
+      "Bash(bd create:*)",
+      "Bash(bd list:*)",
+      "Bash(bd show:*)",
+      "Bash(bd update:*)",
+      "Bash(bd close:*)",
+      "Bash(bd ready:*)",
+      "Bash(bd search:*)",
+      "Bash(bd status:*)",
+      "Bash(bd dep:*)",
+      "Bash(bd sync:*)",
+      "Bash(bd dolt:*)",
+      "Bash(bd audit:*)",
+      "Bash(bd reopen:*)",
+      "Bash(bd init:*)"
+    ]
+  },
+
+  "hooks": {
+    "PreToolUse": [
+      {
+        "_comment": "Block Write/Edit on main branch",
+        "matcher": "Write|Edit",
+        "hooks": [
+          { "type": "command", "command": "bash .claude/hooks/check-branch.sh" }
+        ]
+      },
+      {
+        "_comment": "Warn on large file reads without line range",
+        "matcher": "Read",
+        "hooks": [
+          { "type": "command", "command": "bash .claude/hooks/large-file-guard.sh" }
+        ]
+      },
+      {
+        "_comment": "Validate commits, block dangerous commands, ASCII check, LOC threshold (Standard governance)",
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "bash .claude/hooks/check-commit-msg.sh" },
+          { "type": "command", "command": "bash .claude/hooks/check-coverage.sh" },
+          { "type": "command", "command": "bash .claude/hooks/check-tests-before-push.sh" },
+          { "type": "command", "command": "bash .claude/hooks/block-dangerous-commands.sh" },
+          { "type": "command", "command": "bash .claude/hooks/ascii-punctuation.sh" },
+          { "type": "command", "command": "bash .claude/hooks/check-loc-threshold.sh" }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "_comment": "Auto-format and log edits after Write/Edit",
+        "matcher": "Write|Edit",
+        "hooks": [
+          { "type": "command", "command": "bash .claude/hooks/auto-format.sh" },
+          { "type": "command", "command": "bash .claude/hooks/log-edits.sh" }
+        ]
+      },
+      {
+        "_comment": "Auto-log commit info to task tracker",
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "bash .claude/hooks/auto-task-note.sh" },
+          { "type": "command", "command": "bash .claude/hooks/ralph-progress.sh" }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "_comment": "Advisory hints for vague prompts",
+        "hooks": [
+          { "type": "command", "command": "bash .claude/hooks/prompt-improver.sh" }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "_comment": "Save session snapshot before context compaction",
+        "hooks": [
+          { "type": "command", "command": "bash .claude/hooks/pre-compact-capture.sh" }
+        ]
+      }
+    ]
+  }
+}

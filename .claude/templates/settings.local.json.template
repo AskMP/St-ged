@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "_comment": [
+    "Claude Code local settings. Copy to .claude/settings.local.json and customize.",
+    "This file is NOT checked into git (add to .gitignore).",
+    "The 'allow' list pre-approves specific Bash commands so the agent",
+    "does not prompt for confirmation on routine operations.",
+    "Customize the package scopes and commands for your project.",
+    "Task CLI permissions: scaffold replaces these based on chosen tool. Tokens: {{task_cli_name}}"
+  ],
+
+  "permissions": {
+    "allow": [
+      "Bash(npm test:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run:*)",
+      "Bash(npm install:*)",
+
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git checkout:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(git merge:*)",
+      "Bash(git branch:*)",
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(git stash:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr diff:*)",
+
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(head:*)",
+      "Bash(curl:*)",
+
+      "Bash(node --version:*)",
+      "Bash(docker compose ps:*)",
+      "Bash(docker compose logs:*)",
+
+      "Bash(bd create:*)",
+      "Bash(bd list:*)",
+      "Bash(bd show:*)",
+      "Bash(bd update:*)",
+      "Bash(bd close:*)",
+      "Bash(bd ready:*)",
+      "Bash(bd search:*)",
+      "Bash(bd status:*)",
+      "Bash(bd dep:*)",
+      "Bash(bd sync:*)",
+      "Bash(bd audit:*)",
+      "Bash(bd reopen:*)",
+      "Bash(bd defer:*)",
+      "Bash(bd comments:*)",
+
+      "Bash(gh issue create:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh issue edit:*)",
+      "Bash(gh issue close:*)",
+      "Bash(gh issue comment:*)"
+    ]
+  },
+
+  "model": "claude-sonnet-4-20250514",
+  "spinnerTipsEnabled": false,
+  "prefersReducedMotion": true,
+  "outputStyle": "default"
+}

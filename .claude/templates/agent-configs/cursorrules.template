@@ -1,0 +1,35 @@
+# Cursor Rules — YOUR_PROJECT_NAME
+
+## Universal Config
+
+This project's complete configuration is in `AGENTS.md` at the project root. Read it before making any changes. It contains: tech stack, coding conventions, testing setup, build commands, task management, and development workflow.
+
+## Project Context
+
+**Language**: TODO
+**Framework**: TODO
+**Test Command**: TODO
+**Type Check**: `{{type_check_command}}`
+
+## Task Management
+
+- **Task CLI**: {{task_cli_name}}
+- **Task data path**: {{task_data_path}}
+
+{{task_cli_exclusivity_note}}
+
+## Cursor-Specific Rules
+
+- Always read `AGENTS.md` for project conventions before editing files
+- Follow the branch and commit rules defined in `AGENTS.md`
+- Run tests after every significant change
+- Prefer editing existing files over creating new ones
+- Do not add dependencies without justification
+- Follow the task workflow: check for assigned tasks, set in-progress, branch, implement, verify, commit, close
+
+## Key Patterns
+
+- Check existing code for patterns before introducing new ones
+- Follow the coding conventions in `AGENTS.md`
+- Maintain consistent error handling patterns
+- Keep changes atomic — one logical change per commit
