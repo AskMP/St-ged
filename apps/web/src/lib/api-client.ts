@@ -118,25 +118,25 @@ export const apiClient = {
       if (params?.diet) qs.set('diet', params.diet)
       if (params?.search) qs.set('search', params.search)
       const query = qs.toString()
-      return request<unknown[]>(`/recipes${query ? `?${query}` : ''}`)
+      return request<unknown[]>(`/api/recipes${query ? `?${query}` : ''}`)
     },
     get(id: string) {
-      return request<Record<string, unknown>>(`/recipes/${id}`)
+      return request<Record<string, unknown>>(`/api/recipes/${id}`)
     },
     import(url: string) {
-      return request<Record<string, unknown>>('/recipes/import', {
+      return request<Record<string, unknown>>('/api/recipes/import', {
         method: 'POST',
         body: JSON.stringify({ url }),
       })
     },
     scale(recipe: unknown, factor: number) {
-      return request<Record<string, unknown>>('/recipes/scale', {
+      return request<Record<string, unknown>>('/api/recipes/scale', {
         method: 'POST',
         body: JSON.stringify({ recipe, factor }),
       })
     },
     substitute(ingredient: string) {
-      return request<{ substitutions: string[] }>('/recipes/substitute', {
+      return request<{ substitutions: string[] }>('/api/recipes/substitute', {
         method: 'POST',
         body: JSON.stringify({ ingredient }),
       })
@@ -144,7 +144,7 @@ export const apiClient = {
     cost(recipeId: string, householdId?: string) {
       const qs = householdId ? `?householdId=${encodeURIComponent(householdId)}` : ''
       return request<{ costPerServing: number; pantryDeduction: number }>(
-        `/recipes/${recipeId}/cost${qs}`
+        `/api/recipes/${recipeId}/cost${qs}`
       )
     },
   },
@@ -162,6 +162,14 @@ export const apiClient = {
       return request<any>(`/potluck/${eventId}/slots/${slotId}/claim`, {
         method: 'POST',
         body: JSON.stringify({ guestName }),
+      })
+    },
+  },
+  batchPrep: {
+    combine(recipeIds: string[]) {
+      return request<{ items: any[]; sequence: string[] }>('/batch-prep/combine', {
+        method: 'POST',
+        body: JSON.stringify({ recipeIds }),
       })
     },
   },
