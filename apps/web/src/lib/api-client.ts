@@ -48,6 +48,55 @@ export const apiClient = {
       })
     },
   },
+  plans: {
+    getWeek(householdId: string, start: string) {
+      return request<{ plan: { id: string }; entries: unknown[] }>(
+        `/households/${householdId}/plans/week?start=${encodeURIComponent(start)}`
+      )
+    },
+    addEntry(planId: string, data: { recipeId: string; date: string; mealType: string }) {
+      return request<unknown>(`/plans/${planId}/entries`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      })
+    },
+    removeEntry(planId: string, entryId: string) {
+      return request<{ success: boolean }>(`/plans/${planId}/entries/${entryId}`, {
+        method: 'DELETE',
+      })
+    },
+    generateList(planId: string) {
+      return request<unknown>(`/plans/${planId}/generate-list`, { method: 'POST' })
+    },
+    copyWeek(householdId: string, from: string, to: string) {
+      return request<unknown>(`/households/${householdId}/plans/copy`, {
+        method: 'POST',
+        body: JSON.stringify({ from, to }),
+      })
+    },
+  },
+  lists: {
+    getAll(householdId: string) {
+      return request<unknown[]>(`/households/${householdId}/lists`)
+    },
+    get(listId: string) {
+      return request<{ id: string; name?: string; items: unknown[] }>(`/lists/${listId}`)
+    },
+    addItem(listId: string, name: string) {
+      return request<unknown>(`/lists/${listId}/items`, {
+        method: 'POST',
+        body: JSON.stringify({ name }),
+      })
+    },
+    toggleItem(listId: string, itemId: string) {
+      return request<unknown>(`/lists/${listId}/items/${itemId}`, { method: 'PATCH' })
+    },
+    deleteItem(listId: string, itemId: string) {
+      return request<{ success: boolean }>(`/lists/${listId}/items/${itemId}`, {
+        method: 'DELETE',
+      })
+    },
+  },
   recipes: {
     list(params?: { diet?: string; search?: string }) {
       const qs = new URLSearchParams()
