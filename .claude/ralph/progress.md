@@ -23,6 +23,13 @@
 - **Gotchas**: Playwright placeholder locator API differs from testing-library; mocking modules with vi.mock requires exact module path match
 - **Time**: Sat Mar  7 14:39:00 UTC 2026
 
+## Iteration 5 -- Fulfillment page (stg-129..stg-133)
+- **Status**: Complete
+- **Files changed**: apps/web/src/routes/FulfillmentPage.tsx, apps/web/src/lib/api-client.ts, apps/web/src/main.tsx, apps/web/src/index.css, apps/web/vite.config.ts, apps/web/src/App.tsx, apps/web/src/routes/Planning.tsx, apps/web/tests/unit/fulfillment-route.test.tsx, apps/web/tests/e2e/fulfillment.spec.ts, prd-phases/01-mvp-pages/prd-01-pages-fulfillment.md, prd-phases/manifest.md
+- **Patterns discovered**: Tailwind v4 requires @tailwindcss/vite plugin + src/index.css with `@import "tailwindcss"` + import in main.tsx -- none of this was wired; useSearchParams() for passing listId between Planning and Fulfillment pages via URL query params; E2E mobile size assertions are flaky in headless Playwright without real CSS rendering -- just check visibility
+- **Gotchas**: Tailwind was completely missing from the web package (no package, no plugin, no CSS file) -- all class names were dead strings; mobile viewport size assertions in headless tests fail because Tailwind padding isn't reliably computed; bd ID prefix must be lowercase (stg-) not uppercase (STG-)
+- **Time**: Sat Mar  7 15:00:00 UTC 2026
+
 ## Iteration 4 -- Planning pages (STG-124..STG-128)
 - **Status**: Complete
 - **Files changed**: apps/web/src/routes/Planning.tsx, apps/web/src/lib/socket.ts, apps/web/src/lib/api-client.ts (plans+lists), apps/web/src/App.tsx, apps/web/tests/unit/planning-routes.test.tsx, apps/web/tests/e2e/planning.spec.ts, prd-phases/01-mvp-pages/prd-01-pages-planning.md, prd-phases/manifest.md
