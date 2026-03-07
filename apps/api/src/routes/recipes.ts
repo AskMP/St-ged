@@ -7,6 +7,8 @@ import {
   getRecipe,
   createRecipe,
   importRecipeFromUrl,
+  scaleRecipe,
+  getSubstitutions,
   deleteRecipe,
 } from '../services/recipe-service'
 
@@ -38,6 +40,16 @@ const recipesRouter = new Hono()
     const body = await c.req.json()
     const imported = await importRecipeFromUrl(body.url, body.jsonLd)
     return c.json(imported)
+  })
+  .post('/scale', async (c) => {
+    const { recipe, factor } = await c.req.json()
+    const scaled = await scaleRecipe(recipe, factor)
+    return c.json(scaled)
+  })
+  .post('/substitute', async (c) => {
+    const { ingredient } = await c.req.json()
+    const subs = await getSubstitutions(ingredient)
+    return c.json({ substitutions: subs })
   })
   .delete('/:id', async (c) => {
     const id = c.req.param('id')

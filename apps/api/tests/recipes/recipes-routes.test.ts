@@ -35,5 +35,26 @@ describe('recipes routes', () => {
       method: 'DELETE',
     })
     expect(deleteRes.status).toBe(200)
+
+    // scaling payload should be forwarded and echoed
+    const scaleRes = await app.request(`${BASE}/api/recipes/scale`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ recipe: { ingredients: [{name:'a',quantity:1}] }, factor: 2 }),
+    })
+    expect(scaleRes.status).toBe(200)
+    const scaled = await scaleRes.json()
+    expect(scaled.ingredients[0].quantity).toBe(2)
+
+    // substitution endpoint
+    const subRes = await app.request(`${BASE}/api/recipes/substitute`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ ingredient: 'flour' }),
+    })
+    expect(subRes.status).toBe(200)
+    const subs = await subRes.json()
+    expect(subs.substitutions).toBeInstanceOf(Array)
+    expect(subs.substitutions.length).toBeGreaterThan(0)
   })
 })
