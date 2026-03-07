@@ -84,3 +84,26 @@ export async function changeMemberRole(householdId: string, userId: string, role
 export async function getHouseholdByInvite(code: string) {
   return HOUSEHOLDS.find((h) => h.inviteCode === code)
 }
+
+// authorization helpers for later modules
+export async function canAddGuest(householdId: string, userId: string): Promise<boolean> {
+  const h = HOUSEHOLDS.find((h) => h.id === householdId)
+  if (!h) return false
+  return h.members.some((m) => (m.userId === userId && (m.role === 'owner' || m.role === 'member')))
+}
+
+export async function verifyHouseholdAccess(householdId: string, userId: string) {
+  const h = HOUSEHOLDS.find((h) => h.id === householdId)
+  if (!h) {
+    const err: any = new Error('Household not found')
+    err.status = 404
+    throw err
+  }
+  const m = h.members.find((m) => m.userId === userId)
+  if (!m) {
+    const err: any = new Error('Not a member')
+    err.status = 401
+    throw err
+  }
+  return { household: h, member: m }
+}
