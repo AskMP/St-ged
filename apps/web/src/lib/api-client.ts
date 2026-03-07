@@ -48,4 +48,34 @@ export const apiClient = {
       })
     },
   },
+  recipes: {
+    list(params?: { diet?: string; search?: string }) {
+      const qs = new URLSearchParams()
+      if (params?.diet) qs.set('diet', params.diet)
+      if (params?.search) qs.set('search', params.search)
+      const query = qs.toString()
+      return request<unknown[]>(`/recipes${query ? `?${query}` : ''}`)
+    },
+    get(id: string) {
+      return request<Record<string, unknown>>(`/recipes/${id}`)
+    },
+    import(url: string) {
+      return request<Record<string, unknown>>('/recipes/import', {
+        method: 'POST',
+        body: JSON.stringify({ url }),
+      })
+    },
+    scale(recipe: unknown, factor: number) {
+      return request<Record<string, unknown>>('/recipes/scale', {
+        method: 'POST',
+        body: JSON.stringify({ recipe, factor }),
+      })
+    },
+    substitute(ingredient: string) {
+      return request<{ substitutions: string[] }>('/recipes/substitute', {
+        method: 'POST',
+        body: JSON.stringify({ ingredient }),
+      })
+    },
+  },
 }
