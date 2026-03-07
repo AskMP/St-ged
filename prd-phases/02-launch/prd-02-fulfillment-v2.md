@@ -59,11 +59,11 @@ Extends the MVP fulfillment path with richer partner integrations, including the
   - **Verify**: Integration tests pass once added
   - **Accept**: The app can support richer partner fulfillment without removing MVP fallback paths
 
-- [ ] **Task 2: Add richer-fulfillment tests** `[BD:STG-180]`
+- [x] **Task 2: Add richer-fulfillment tests** `[BD:STG-180]`
   - **Type**: task
   - **Do**: Add tests for official-cart handoff behavior, partner selection, Kroger fallback/selection, and Chicory-ready sponsored ingredient slots.
-  - **Files**: `apps/api/tests/fulfillment-v2/`, `apps/web/tests/e2e/fulfillment-v2.spec.ts`
-  - **Verify**: The fulfillment-v2 tests pass against the implemented services
+  - **Files**: `apps/api/tests/fulfillment/`, `apps/api/tests/fulfillment-service.test.ts`, `apps/web/tests/e2e/fulfillment.spec.ts`, `apps/web/tests/unit/fulfillment-route.test.tsx`
+  - **Verify**: The fulfillment-v2 tests pass against the implemented services (unit + integration)
   - **Accept**: Richer fulfillment expectations are explicit before code changes
 
 - [ ] **Task 3: Refactor fallback and partner-selection behavior** `[BD:STG-182]`

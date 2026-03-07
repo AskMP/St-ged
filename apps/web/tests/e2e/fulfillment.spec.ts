@@ -56,6 +56,29 @@ test.describe('Fulfillment page', () => {
     await expect(page.getByText('Add gourmet spices for 5% off')).toBeVisible()
   })
 
+  test('provider selector appears and switching triggers API', async ({ page }) => {
+    let lastProvider: string | undefined
+    await page.route('**/fulfillment/link', (route) => {
+      const post = route.request().postDataJSON()
+      lastProvider = post.provider
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          provider: lastProvider || 'instacart',
+          url: 'https://www.instacart.com',
+          token: 'tok',
+          attribution: { affiliate: 'a' },
+        }),
+      })
+    })
+    await page.goto('/fulfillment?listId=list-e2e')
+    const select = page.getByTestId('provider-select')
+    await expect(select).toBeVisible()
+    await select.selectOption('kroger')
+    expect(lastProvider).toBe('kroger')
+  })
+
   test('renders partner attribution metadata', async ({ page }) => {
     await page.goto('/fulfillment?listId=list-e2e')
     await expect(page.getByTestId('partner-attribution')).toBeVisible()

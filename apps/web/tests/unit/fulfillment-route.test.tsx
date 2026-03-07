@@ -79,6 +79,37 @@ describe('FulfillmentPage', () => {
     expect(screen.getByText('Add gourmet spices for 5% off')).toBeInTheDocument()
   })
 
+  it('shows provider selector and reacts to change', async () => {
+    // initially getProviders returns ['instacart'] via beforeEach
+    renderFulfillment()
+    await waitFor(() => {
+      expect(screen.getByTestId('provider-select')).toBeInTheDocument()
+    })
+    const select = screen.getByTestId('provider-select') as HTMLSelectElement
+    expect(select.value).toBe('instacart')
+    // simulate user choosing an unsupported provider; component should still call generateLink
+    vi.mocked(apiClient.apiClient.fulfillment.generateLink).mockClear()
+    select.value = 'kroger'
+    select.dispatchEvent(new Event('change', { bubbles: true }))
+    await waitFor(() => {
+      expect(apiClient.apiClient.fulfillment.generateLink).toHaveBeenCalledWith('my-list-42', 'kroger')
+    })
+  })
+
+  it('renders sponsored items if present', async () => {
+    const linkWithSponsored = {
+      ...mockLinkData,
+      sponsoredItems: [{ name: 'Organic Honey', brand: 'ChicoryFarm', price: 6.99 }],
+    }
+    vi.mocked(apiClient.apiClient.fulfillment.generateLink).mockResolvedValue(linkWithSponsored)
+    renderFulfillment()
+    await waitFor(() => {
+      expect(screen.getByTestId('sponsored-list')).toBeInTheDocument()
+    })
+    expect(screen.getByText(/Organic Honey/)).toBeInTheDocument()
+    expect(screen.getByText(/ChicoryFarm/)).toBeInTheDocument()
+  })
+
   it('renders partner attribution metadata', async () => {
     renderFulfillment()
     await waitFor(() => {
