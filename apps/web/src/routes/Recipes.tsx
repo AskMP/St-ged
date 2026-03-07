@@ -34,11 +34,21 @@ function NutritionRow({ nutrition }: { nutrition: NutritionInfo }) {
 
 type DietaryProfile = 'vegan' | 'vegetarian' | 'dairy-free' | 'gluten-free';
 
+type SubstitutionState = {
+  original: string;
+  replacement: string;
+  reason: string;
+  accepted: boolean;
+};
+
 function DietaryAdaptation({ recipeId }: { recipeId: string }) {
   const [profiles, setProfiles] = useState<DietaryProfile[]>([]);
   const [selectedProfile, setSelectedProfile] = useState<DietaryProfile | null>(null);
   const [adapted, setAdapted] = useState<any>(null);
+  const [substitutions, setSubstitutions] = useState<SubstitutionState[]>([]);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [savedMessage, setSavedMessage] = useState('');
 
   useEffect(() => {
     apiClient.dietary.getProfiles().then((data) => {
@@ -49,9 +59,17 @@ function DietaryAdaptation({ recipeId }: { recipeId: string }) {
   const handleAdapt = async (profile: DietaryProfile) => {
     setSelectedProfile(profile);
     setLoading(true);
+    setSavedMessage('');
     try {
       const result = await apiClient.dietary.adapt(recipeId, profile);
       setAdapted(result);
+      // Initialize all substitutions as accepted by default
+      setSubstitutions(
+        result.substitutions.map((sub: any) => ({
+          ...sub,
+          accepted: true,
+        }))
+      );
     } catch (e) {
       console.error('Adaptation failed', e);
     } finally {
@@ -59,10 +77,48 @@ function DietaryAdaptation({ recipeId }: { recipeId: string }) {
     }
   };
 
+  const handleToggleSub = (index: number) => {
+    setSubstitutions((prev) =>
+      prev.map((sub, i) =>
+        i === index ? { ...sub, accepted: !sub.accepted } : sub
+      )
+    );
+  };
+
   const handleReset = () => {
     setSelectedProfile(null);
     setAdapted(null);
+    setSubstitutions([]);
+    setSavedMessage('');
   };
+
+  const handleSaveAdapted = async () => {
+    if (!adapted) return;
+    setSaving(true);
+    try {
+      // Filter to only accepted substitutions
+      const acceptedSubs = substitutions.filter(s => s.accepted);
+      // Apply accepted substitutions to create final recipe
+      const finalRecipe = {
+        ...adapted.adaptedRecipe,
+        ingredients: adapted.adaptedRecipe.ingredients?.map((ing: any, idx: number) => {
+          const sub = acceptedSubs.find(s => s.original === (typeof ing === 'string' ? ing : ing.name));
+          if (sub) {
+            return typeof ing === 'string' ? sub.replacement : { ...ing, name: sub.replacement };
+          }
+          return ing;
+        }),
+      };
+      await apiClient.recipes.create(finalRecipe);
+      setSavedMessage('Adapted recipe saved to your library!');
+    } catch (e) {
+      console.error('Save failed', e);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const acceptedCount = substitutions.filter(s => s.accepted).length;
 
   return (
     <div className="bg-purple-50 rounded-xl p-4 mb-6" data-testid="dietary-adaptation">
@@ -74,7 +130,7 @@ function DietaryAdaptation({ recipeId }: { recipeId: string }) {
               key={profile}
               onClick={() => handleAdapt(profile)}
               disabled={loading}
-              className="px-4 py-2 rounded-lg border border-purple-200 bg-white text-purple-700 text-sm font-medium hover:bg-purple-100 transition-colors"
+              className="px-4 py-2 rounded-lg border border-purple-200 bg-white text-purple-700 text-sm font-medium hover:bg-purple-100 transition-colors disabled:opacity-50"
             >
               {profile === 'dairy-free' ? 'Dairy-Free' : 
                profile === 'gluten-free' ? 'Gluten-Free' : 
@@ -92,21 +148,54 @@ function DietaryAdaptation({ recipeId }: { recipeId: string }) {
               onClick={handleReset}
               className="text-xs text-purple-600 hover:underline"
             >
-              Show original
+              Start over
             </button>
           </div>
-          {adapted.substitutions.length > 0 && (
-            <div className="text-sm text-stone-600 mb-2">
-              <strong>{adapted.substitutions.length} substitutions:</strong>
-              <ul className="mt-1 space-y-1">
-                {adapted.substitutions.map((sub: any, i: number) => (
-                  <li key={i} className="text-xs">
-                    • {sub.original} → {sub.replacement}
+          
+          {substitutions.length > 0 ? (
+            <div className="mb-4">
+              <p className="text-sm text-stone-600 mb-2">
+                Review and toggle substitutions ({acceptedCount} of {substitutions.length} applied):
+              </p>
+              <ul className="space-y-2" data-testid="substitutions-list">
+                {substitutions.map((sub, i) => (
+                  <li key={i} className={`flex items-start gap-2 text-sm p-2 rounded ${sub.accepted ? 'bg-green-50' : 'bg-stone-100'}`}>
+                    <input
+                      type="checkbox"
+                      checked={sub.accepted}
+                      onChange={() => handleToggleSub(i)}
+                      className="mt-1 h-4 w-4 text-green-600 rounded"
+                      data-testid={`sub-toggle-${i}`}
+                    />
+                    <div className="flex-1">
+                      <span className={sub.accepted ? 'text-stone-800' : 'text-stone-400 line-through'}>
+                        {sub.original}
+                      </span>
+                      <span className="mx-1">→</span>
+                      <span className="text-green-700 font-medium">{sub.replacement}</span>
+                      <p className="text-xs text-stone-500 mt-1">{sub.reason}</p>
+                    </div>
                   </li>
                 ))}
               </ul>
             </div>
+          ) : (
+            <p className="text-sm text-stone-500 mb-4">No substitutions needed for this recipe.</p>
           )}
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleSaveAdapted}
+              disabled={saving || acceptedCount === 0}
+              className="px-4 py-2 rounded-lg bg-purple-600 text-white text-sm font-medium hover:bg-purple-700 transition-colors disabled:opacity-50"
+              data-testid="save-adapted-recipe"
+            >
+              {saving ? 'Saving...' : 'Save Adapted Recipe'}
+            </button>
+            {savedMessage && (
+              <span className="text-sm text-green-600" data-testid="save-message">{savedMessage}</span>
+            )}
+          </div>
         </div>
       )}
     </div>

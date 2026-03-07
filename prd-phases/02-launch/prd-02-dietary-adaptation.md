@@ -66,14 +66,14 @@ Adds whole-recipe dietary adaptation so users can transform a recipe into vegan,
   - **Verify**: The adaptation tests pass against the implemented features
   - **Accept**: Dietary adaptation requirements are explicit before code changes
 
-- [ ] **Task 3: Refactor adaptation explanations and accept/reject controls** `[BD:STG-167]`
+- [x] **Task 3: Refactor adaptation explanations and accept/reject controls** `[BD:STG-167]`
   - **Type**: task
   - **Do**: Improve explainability, per-substitution review controls, and variant metadata so the feature remains trustworthy.
   - **Files**: `apps/web/src/components/`, `apps/api/src/services/`
   - **Verify**: Tests remain green after cleanup
   - **Accept**: Dietary adaptation feels understandable and controllable
 
-- [ ] **Task 4: Verify adaptation flows in browser runtime** `[BD:STG-168]`
+- [x] **Task 4: Verify adaptation flows in browser runtime** `[BD:STG-168]`
   - **Type**: task
   - **Do**: Run browser E2E for adapting a recipe, reviewing substitutions, and saving the resulting variant.
   - **Files**: `apps/web/tests/e2e/dietary-adaptation.spec.ts`

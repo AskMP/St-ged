@@ -123,6 +123,12 @@ export const apiClient = {
     get(id: string) {
       return request<Record<string, unknown>>(`/api/recipes/${id}`)
     },
+    create(data: Record<string, unknown>) {
+      return request<Record<string, unknown>>('/api/recipes', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      })
+    },
     import(url: string) {
       return request<Record<string, unknown>>('/api/recipes/import', {
         method: 'POST',
