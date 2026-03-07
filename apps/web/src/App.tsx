@@ -45,8 +45,8 @@ function App() {
           <Route path="/recipes/:id" element={<RecipeDetail />} />
           <Route path="/recipes/:id/cook" element={<CookingView />} />
           <Route path="/lists" element={<Lists />} />
-          <Route path="/planning" element={<div>Planning page</div>} />
-          <Route path="/fulfillment" element={<div>Fulfillment page</div>} />
+          <Route path="/planning" element={<Planning />} />
+          <Route path="/fulfillment" element={<FulfillmentPage />} />
         </Routes>
       </main>
     </BrowserRouter>

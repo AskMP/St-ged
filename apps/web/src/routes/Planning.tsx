@@ -352,7 +352,7 @@ export default function Planning() {
       {groceryList && groceryList.items.length > 0 && (
         <div className="mt-6">
           <Link
-            to="/fulfillment"
+            to={`/fulfillment?listId=${groceryList.id}`}
             data-testid="fulfill-link"
             className="block w-full py-3 rounded-xl bg-green-600 text-white font-medium text-center hover:bg-green-700"
           >

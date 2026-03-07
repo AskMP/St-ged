@@ -97,6 +97,14 @@ export const apiClient = {
       })
     },
   },
+  fulfillment: {
+    generateLink(listId: string) {
+      return request<{ url: string; token: string; attribution: { affiliate: string }; bundles?: Array<{ name: string; description: string }> }>(
+        '/fulfillment/instacart-link',
+        { method: 'POST', body: JSON.stringify({ listId }) }
+      )
+    },
+  },
   recipes: {
     list(params?: { diet?: string; search?: string }) {
       const qs = new URLSearchParams()

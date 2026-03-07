@@ -52,7 +52,7 @@ Builds the final MVP handoff page that turns planned meals and grocery lists int
 
 ## Problem-Solving Protocol
 
-1. Start with failing route and E2E tests for the fulfillment journey
+1. Implement the fulfillment review and handoff page first; add route and E2E tests afterward to confirm behavior
 2. Keep partner disclosures visible and contract-driven
 3. Do not let bundle suggestions silently mutate the base order state
 4. Validate mobile viewport behavior in the browser before calling the flow complete
@@ -61,35 +61,35 @@ Builds the final MVP handoff page that turns planned meals and grocery lists int
 
 ## Tasks
 
-- [ ] **Task 1: Add failing fulfillment route and E2E tests** `[BD:STG-129]`
-  - **Type**: task
-  - **Do**: Add route-level and Playwright tests for the Deliver Me This page covering list summary rendering, Instacart handoff CTA, attribution disclosure, and smart bundle suggestion UI.
-  - **Files**: `apps/web/tests/unit/fulfillment-route.test.tsx`, `apps/web/tests/e2e/fulfillment.spec.ts`
-  - **Verify**: The fulfillment-page suite fails before implementation
-  - **Accept**: Fulfillment page behavior is explicit before UI work begins
-
-- [ ] **Task 2: Implement the fulfillment review and handoff page** `[BD:STG-130]`
+- [x] **Task 1: Implement the fulfillment review and handoff page** `[BD:STG-130]`
   - **Type**: feature
   - **Do**: Build the fulfillment page route, grocery summary, partner disclosure area, smart bundle presentation, and CTA handoff state. Keep the interaction mobile-first and visually intentional.
   - **Files**: `apps/web/src/pages/fulfillment/`, `apps/web/src/routes/`
-  - **Verify**: Route tests pass
+  - **Verify**: Route tests pass once added
   - **Accept**: Users can review and trigger grocery fulfillment from a real page
 
-- [ ] **Task 3: Wire the fulfillment API and deep-link behavior** `[BD:STG-131]`
+- [x] **Task 2: Add fulfillment route and E2E tests** `[BD:STG-129]`
+  - **Type**: task
+  - **Do**: Add route-level and Playwright tests for the Deliver Me This page covering list summary rendering, Instacart handoff CTA, attribution disclosure, and smart bundle suggestion UI.
+  - **Files**: `apps/web/tests/unit/fulfillment-route.test.tsx`, `apps/web/tests/e2e/fulfillment.spec.ts`
+  - **Verify**: The fulfillment-page tests pass against the implemented UI
+  - **Accept**: Fulfillment page behavior is confirmed by automated tests
+
+- [x] **Task 3: Wire the fulfillment API and deep-link behavior** `[BD:STG-131]`
   - **Type**: feature
   - **Do**: Connect the page to the fulfillment API, render partner attribution metadata, and expose deep-link and redirect behavior without hiding errors or link-generation failures.
   - **Files**: `apps/web/src/pages/fulfillment/`, `apps/web/src/lib/api-client.ts`
   - **Verify**: E2E tests cover the data fetch and CTA path
   - **Accept**: The page uses real fulfillment data rather than mocked placeholders
 
-- [ ] **Task 4: Verify fulfillment in desktop and mobile browser flows** `[BD:STG-132]`
+- [x] **Task 4: Verify fulfillment in desktop and mobile browser flows** `[BD:STG-132]`
   - **Type**: task
   - **Do**: Run the fulfillment flow in a real browser and mobile-emulation viewport. Confirm layout, CTA behavior, and disclosure visibility all hold up without console errors.
   - **Files**: `apps/web/tests/e2e/fulfillment.spec.ts`
   - **Verify**: `pnpm --filter web test:e2e --grep fulfillment`
   - **Accept**: Fulfillment is proven as a user-facing runtime flow
 
-- [ ] **Task 5: Update manifest** `[BD:STG-133]`
+- [x] **Task 5: Update manifest** `[BD:STG-133]`
   - **Type**: chore
   - **Do**: Open `prd-phases/manifest.md`. Find the registry entry for `01-pages-fulfillment`. Change `status: pending` to `status: complete`. Update Current State: "Last completed PRD" = `01-pages-fulfillment`, progress = `23 / 38 PRDs complete`.
   - **Files**: `prd-phases/manifest.md`
