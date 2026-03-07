@@ -16,10 +16,10 @@ max_iterations: 100
 
 | Field | Value |
 |-------|-------|
-| Last completed PRD | 01-api-auth |
+| Last completed PRD | 01-api-recipes |
 | Timestamp | $(date -u "+%Y-%m-%d %H:%M:%S UTC") |
 | Current phase | 0 (Foundation) |
-| Progress | 11 / 38 PRDs complete |
+| Progress | 12 / 38 PRDs complete |
 
 ---
 
@@ -102,6 +102,14 @@ PRDs with `parallel_safe: true` and all `requires` satisfied may be executed con
 
 ## PRD Registry
 
+> **Note:** the square‑bracket checkboxes here are derived from the `status:` field
+> on each line. They are updated automatically by the final task of each PRD when
+> it runs the “Update manifest” chore.  You should **never edit them manually** –
+> change the `status:` value instead, and run `sed -i '' '/status: pending/ s/\- \[ \]/- [ ]/' prd-phases/manifest.md` or
+> `bd` helper to resync.  Only PRD‑level entries are tracked; individual sub‑tasks
+> remain inside their respective PRD files.
+
+
 ### Group 0: Foundation
 
 - [x] **00a** | `prd-phases/00-foundation/prd-00a-task-management.md` | Task management setup (bd init + verification) | status: complete | requires: none |
@@ -118,7 +126,7 @@ PRDs with `parallel_safe: true` and all `requires` satisfied may be executed con
 - [x] **01-data-schema** | `prd-phases/01-mvp-data/prd-01-data-schema.md` | Full Drizzle schema: users, households, recipes, lists, plans, pantry, sync queue | status: complete | requires: 00d |
 - [x] **01-data-usda** | `prd-phases/01-mvp-data/prd-01-data-usda.md` | USDA FDC dataset download + PostgreSQL import + ingredient FTS index | status: complete | requires: 01-data-schema |
 - [x] **01-api-auth** | `prd-phases/01-mvp-api/prd-01-api-auth.md` | NextAuth (Auth.js) routes: sign up, sign in, OAuth, JWT sessions, guest sessions, household invites | status: complete | requires: 01-data-schema |
-- [ ] **01-api-recipes** | `prd-phases/01-mvp-api/prd-01-api-recipes.md` | Recipe CRUD, URL import (JSON-LD), search, nutrition pipeline (Haiku + USDA) | status: pending | requires: 01-data-usda, 01-api-auth |
+- [x] **01-api-recipes** | `prd-phases/01-mvp-api/prd-01-api-recipes.md` | Recipe CRUD, URL import (JSON-LD), search, nutrition pipeline (Haiku + USDA) | status: complete | requires: 01-data-usda, 01-api-auth |
 - [ ] **01-api-households** | `prd-phases/01-mvp-api/prd-01-api-households.md` | Household create/join, member management, invite links, guest-add mode | status: pending | requires: 01-api-auth |
 - [ ] **01-api-pantry** | `prd-phases/01-mvp-api/prd-01-api-pantry.md` | Pantry CRUD, starter pantry templates, household pantry sync contract | status: pending | requires: 01-api-households |
 - [ ] **01-api-lists** | `prd-phases/01-mvp-api/prd-01-api-lists.md` | Grocery list CRUD + Socket.io real-time mutations + conflict resolution | status: pending | requires: 01-api-households |
