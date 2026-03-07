@@ -6,7 +6,10 @@ import Home from "./routes/Home";
 import Onboarding from "./routes/Onboarding";
 import Lists from "./routes/Lists";
 import Recipes, { RecipeDetail, CookingView } from "./routes/Recipes";
+import FridgeClearance from "./routes/FridgeClearance";
 import Planning from "./routes/Planning";
+import Potluck from "./routes/Potluck";
+import PotluckDetail from "./routes/PotluckDetail";
 import FulfillmentPage from "./routes/FulfillmentPage";
 
 function App() {
@@ -34,6 +37,8 @@ function App() {
           <Link to="/recipes">Recipes</Link>
           <Link to="/lists">Lists</Link>
           <Link to="/planning">Planning</Link>
+          <Link to="/fridge-clearance">Fridge Clearance</Link>
+          <Link to="/potluck">Potluck</Link>
           <Link to="/fulfillment">Fulfillment</Link>
         </nav>
       </header>
@@ -46,6 +51,9 @@ function App() {
           <Route path="/recipes/:id/cook" element={<CookingView />} />
           <Route path="/lists" element={<Lists />} />
           <Route path="/planning" element={<Planning />} />
+          <Route path="/fridge-clearance" element={<FridgeClearance />} />
+          <Route path="/potluck" element={<Potluck />} />
+          <Route path="/potluck/:id" element={<PotluckDetail />} />
           <Route path="/fulfillment" element={<FulfillmentPage />} />
         </Routes>
       </main>

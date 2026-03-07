@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import http from 'node:http'
 import { Pool } from 'pg'
-import { Server } from 'socket.io'
+import { createSocketIOserver, getIO } from './lib/socket'
 import { env } from './lib/env'
 import { corsMiddleware } from './middleware/cors'
 import { rateLimitMiddleware } from './middleware/rateLimit'
@@ -10,8 +10,10 @@ import fulfillmentRouter from './routes/fulfillment'
 import householdsRouter from './routes/households'
 import listsRouter from './routes/lists'
 import pantryRouter from './routes/pantry'
+import fridgeClearanceRouter from './routes/fridge-clearance'
 import plansRouter from './routes/plans'
 import recipesRouter from './routes/recipes'
+import potluckRouter from './routes/potluck'
 
 const pool = new Pool({
   connectionString: env.DATABASE_URL,
@@ -48,30 +50,8 @@ const httpServer = http.createServer(async (req, res) => {
   res.end(body)
 })
 
-const io = new Server(httpServer, {
-  cors: {
-    origin: process.env.WEB_URL || 'http://localhost:5173',
-    methods: ['GET', 'POST'],
-  },
-})
-
-io.on('connection', (socket) => {
-  console.log(`Socket connected: ${socket.id}`)
-
-  socket.on('household:join', (householdId: string) => {
-    socket.join(`household:${householdId}`)
-    console.log(`Socket ${socket.id} joined household:${householdId}`)
-  })
-
-  socket.on('household:leave', (householdId: string) => {
-    socket.leave(`household:${householdId}`)
-    console.log(`Socket ${socket.id} left household:${householdId}`)
-  })
-
-  socket.on('disconnect', () => {
-    console.log(`Socket disconnected: ${socket.id}`)
-  })
-})
+// central socket.io setup uses helper from lib/socket
+const io = createSocketIOserver(httpServer)
 
 app.get('/health', async (c) => {
   try {
@@ -93,13 +73,22 @@ app.get('/health', async (c) => {
 app.route('/api/auth', authRouter)
 app.route('/api/recipes', recipesRouter)
 app.route('/api/households', householdsRouter)
+app.route('/api', pantryRouter)
 app.route('/api', listsRouter)
 app.route('/api', plansRouter)
-app.route('/api', pantryRouter)
+app.route('/api', fridgeClearanceRouter)
+app.route('/api/potluck', potluckRouter)
 app.route('/api/fulfillment', fulfillmentRouter)
 
-httpServer.listen(env.PORT, () => {
-  console.log(`Server running on http://localhost:${env.PORT}`)
-})
+// only start the HTTP server when not running under the test runner.
+// Vitest sets NODE_ENV=test; by skipping the listen call we avoid EADDRINUSE
+// when tests import this module multiple times.  Individual tests can still
+// exercise the `app` instance via `app.fetch` or make real HTTP requests if a
+// separate process is started explicitly.
+if (process.env.NODE_ENV !== 'test') {
+  httpServer.listen(env.PORT, () => {
+    console.log(`Server running on http://localhost:${env.PORT}`)
+  })
+}
 
 export { io }

@@ -35,7 +35,7 @@ Adds shareable potluck/event planning with guest claiming, no-login participatio
 
 ### Patterns to Follow
 
-- Start with failing lock/collision tests
+- Begin by implementing event, slot, and guest-claim flows; add tests afterward to confirm behavior
 - Guest participation must work without a full account flow
 - Realtime lock behavior must be verified in browser runtime
 
@@ -52,19 +52,19 @@ Adds shareable potluck/event planning with guest claiming, no-login participatio
 
 ## Tasks
 
-- [ ] **Task 1: Add failing event and slot-lock tests** `[BD:STG-155]`
-  - **Type**: task
-  - **Do**: Add failing API and browser tests for event creation, guest access, slot claiming, and no-overlap locking behavior.
-  - **Files**: `apps/api/tests/potluck/`, `apps/web/tests/e2e/potluck.spec.ts`
-  - **Verify**: The potluck suite fails before implementation
-  - **Accept**: Event-planning expectations are explicit before code changes
-
-- [ ] **Task 2: Implement event, slot, and guest-claim flows** `[BD:STG-156]`
+- [ ] **Task 1: Implement event, slot, and guest-claim flows** `[BD:STG-156]`
   - **Type**: feature
   - **Do**: Build the backend and frontend flows for event creation, slot management, guest claim entry, and host overview.
   - **Files**: `apps/api/src/`, `apps/web/src/pages/`, `packages/db/src/schema/`
-  - **Verify**: Integration tests pass
+  - **Verify**: Integration tests pass once added
   - **Accept**: Guests can claim slots without overlap through the real app
+
+- [ ] **Task 2: Add event and slot-lock tests** `[BD:STG-155]`
+  - **Type**: task
+  - **Do**: Add API and browser tests for event creation, guest access, slot claiming, and no-overlap locking behavior.
+  - **Files**: `apps/api/tests/potluck/`, `apps/web/tests/e2e/potluck.spec.ts`
+  - **Verify**: The potluck tests pass against the implemented flows
+  - **Accept**: Event-planning expectations are explicit before code changes
 
 - [ ] **Task 3: Refactor realtime locking and host visibility UX** `[BD:STG-157]`
   - **Type**: task

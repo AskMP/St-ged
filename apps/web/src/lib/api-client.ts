@@ -16,6 +16,8 @@ async function request<T>(
   return res.json() as Promise<T>
 }
 
+// the fridgeClearance helper belongs on the client, not inside request
+
 export const apiClient = {
   auth: {
     signup(email: string, password: string, displayName: string) {
@@ -46,6 +48,11 @@ export const apiClient = {
       return request<unknown>(`/households/${householdId}/pantry/templates/${template}`, {
         method: 'POST',
       })
+    },
+  },
+  fridgeClearance: {
+    getSuggestions(householdId: string) {
+      return request<unknown>(`/fridge-clearance?householdId=${encodeURIComponent(householdId)}`)
     },
   },
   plans: {
@@ -132,6 +139,29 @@ export const apiClient = {
       return request<{ substitutions: string[] }>('/recipes/substitute', {
         method: 'POST',
         body: JSON.stringify({ ingredient }),
+      })
+    },
+    cost(recipeId: string, householdId?: string) {
+      const qs = householdId ? `?householdId=${encodeURIComponent(householdId)}` : ''
+      return request<{ costPerServing: number; pantryDeduction: number }>(
+        `/recipes/${recipeId}/cost${qs}`
+      )
+    },
+  },
+  potluck: {
+    create(event: Partial<Record<string, any>>) {
+      return request<any>('/potluck', { method: 'POST', body: JSON.stringify(event) })
+    },
+    list() {
+      return request<{ events: any[] }>('/potluck')
+    },
+    get(id: string) {
+      return request<any>(`/potluck/${id}`)
+    },
+    claim(eventId: string, slotId: string, guestName: string) {
+      return request<any>(`/potluck/${eventId}/slots/${slotId}/claim`, {
+        method: 'POST',
+        body: JSON.stringify({ guestName }),
       })
     },
   },
