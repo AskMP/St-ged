@@ -197,7 +197,7 @@ export function RecipeDetail() {
 
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto py-6 px-4">
+      <div data-testid="recipe-detail" className="max-w-2xl mx-auto py-6 px-4">
         <SkeletonCard />
       </div>
     )
@@ -205,7 +205,7 @@ export function RecipeDetail() {
 
   if (error || !recipe) {
     return (
-      <div className="max-w-2xl mx-auto py-6 px-4">
+      <div data-testid="recipe-detail" className="max-w-2xl mx-auto py-6 px-4">
         <p className="text-red-500">{error || 'Not found'}</p>
         <Link to="/recipes" className="text-green-600 text-sm">
           Back to library
