@@ -28,6 +28,24 @@ describe('potluck route', () => {
     expect(fetched.slots.length).toBe(1)
   })
 
+  it('rejects claim if slot is pre-locked', async () => {
+    const createResp = await app.request('http://localhost/api/potluck', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-test-user-id': 'userA' },
+      body: JSON.stringify({
+        title: 'Locked',
+        slots: [{ id: 's1', description: 'Dish', lockedUntil: new Date(Date.now() + 60000).toISOString() }],
+      }),
+    })
+    const evt = await createResp.json()
+    const claimResp = await app.request(`http://localhost/api/potluck/${evt.id}/slots/s1/claim`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-test-user-id': 'userA' },
+      body: JSON.stringify({ guestName: 'George' }),
+    })
+    expect(claimResp.status).toBe(400)
+  })
+
   it('allows claiming a slot', async () => {
     const createResp = await app.request('http://localhost/api/potluck', {
       method: 'POST',

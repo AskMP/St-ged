@@ -52,6 +52,8 @@ export default function PotluckDetail() {
             <span>{slot.description || 'slot'}</span>
             {slot.guestName ? (
               <span className="text-stone-500">Taken by {slot.guestName}</span>
+            ) : slot.lockedUntil && new Date(slot.lockedUntil).getTime() > Date.now() ? (
+              <span className="text-amber-600">Locked until {new Date(slot.lockedUntil).toLocaleTimeString()}</span>
             ) : (
               <div className="flex gap-2">
                 <input

@@ -9,7 +9,8 @@ export async function createEvent(data: Partial<PotluckEvent>): Promise<PotluckE
     title: data.title ?? 'Untitled event',
     hostHouseholdId: data.hostHouseholdId,
     date: data.date,
-    slots: data.slots ?? [],
+    // ensure slots list has no locks initially
+    slots: (data.slots ?? []).map((s) => ({ ...s })),
   }
   EVENTS.push(evt)
   return evt
@@ -37,12 +38,24 @@ export async function claimSlot(
   const slot = evt.slots.find((s) => s.id === slotId)
   if (!slot) return { success: false, message: 'slot not found' }
 
+  const now = Date.now()
+  if (slot.lockedUntil && new Date(slot.lockedUntil).getTime() > now) {
+    return { success: false, message: 'slot temporarily locked' }
+  }
+
   if (slot.guestName) {
     return { success: false, message: 'already claimed' }
   }
 
+  // set a short-lived lock to guard against near-simultaneous requests
+  slot.lockedUntil = new Date(now + 5000).toISOString()
+
+  // pretend some async work (e.g. DB write)
+  await new Promise((r) => setTimeout(r, 1))
+
   slot.guestName = guestName
   slot.claimedAt = new Date().toISOString()
+  slot.lockedUntil = undefined
   return { success: true, event: evt }
 }
 

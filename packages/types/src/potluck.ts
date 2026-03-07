@@ -7,6 +7,8 @@ export interface PotluckSlot {
   guestName?: string
   /** timestamp when claim occurred */
   claimedAt?: string
+  /** ISO timestamp until which this slot is locked (temporary) */
+  lockedUntil?: string
 }
 
 export interface PotluckEvent {

@@ -63,4 +63,21 @@ describe('Potluck pages', () => {
       expect(apiClient.potluck.claim).toHaveBeenCalledWith('e1', 's1', 'Sam')
     })
   })
+
+  it('shows locked state when slot has lockedUntil', async () => {
+    const future = new Date(Date.now() + 60000).toISOString()
+    const evt = { id: 'e2', title: 'Locked Event', slots: [{ id: 's1', description: 'Dish', lockedUntil: future }] }
+    vi.mocked(apiClient.potluck.get).mockResolvedValue(evt)
+    render(
+      <MemoryRouter initialEntries={["/potluck/e2"]}>
+        <Routes>
+          <Route path="/potluck/:id" element={<PotluckDetail />} />
+        </Routes>
+      </MemoryRouter>
+    )
+    await waitFor(() => {
+      expect(apiClient.potluck.get).toHaveBeenCalledWith('e2')
+    })
+    expect(screen.getByText(/Locked until/)).toBeInTheDocument()
+  })
 })

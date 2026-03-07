@@ -49,6 +49,19 @@ describe('potluck service', () => {
     expect(r2.message).toMatch(/already claimed/)
   })
 
+  it('handles near-simultaneous claims with locking', async () => {
+    const evt = await createEvent({
+      title: 'Race',
+      slots: [{ id: 's1', description: 'Dish' }],
+    })
+    const [a, b] = await Promise.all([
+      claimSlot(evt.id, 's1', 'Alice'),
+      claimSlot(evt.id, 's1', 'Bob'),
+    ])
+    // exactly one should succeed
+    expect([a.success, b.success].filter(Boolean).length).toBe(1)
+  })
+
   it('errors when event or slot not found', async () => {
     const r1 = await claimSlot('nope', 's1', 'X')
     expect(r1.success).toBe(false)
