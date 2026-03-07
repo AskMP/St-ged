@@ -35,7 +35,7 @@ Adds household operations features for splitting grocery costs and scheduling co
 
 ### Patterns to Follow
 
-- Start with failing splitting and rotation tests
+- Start by implementing splitting and rotation features; add tests afterward to confirm behavior
 - Keep payment and scheduling logic transparent
 - Validate the flows through shared-household browser scenarios
 
@@ -52,19 +52,19 @@ Adds household operations features for splitting grocery costs and scheduling co
 
 ## Tasks
 
-- [ ] **Task 1: Add failing household-ops tests** `[BD:STG-175]`
-  - **Type**: task
-  - **Do**: Add failing API and browser tests for grocery cost splitting, custom weights, cook rotation scheduling, and household visibility of assignments.
-  - **Files**: `apps/api/tests/household-ops/`, `apps/web/tests/e2e/household-ops.spec.ts`
-  - **Verify**: The household-ops suite fails before implementation
-  - **Accept**: Cost-splitting and rotation expectations are explicit before code changes
-
-- [ ] **Task 2: Implement splitting and rotation features** `[BD:STG-176]`
+- [x] **Task 1: Implement splitting and rotation features** `[BD:STG-176]`
   - **Type**: feature
   - **Do**: Build the backend and frontend flows for entering grocery totals, splitting costs, and rotating cooking assignments across household members.
   - **Files**: `apps/api/src/services/`, `apps/web/src/pages/`, `packages/types/src/`
-  - **Verify**: Integration tests pass
+  - **Verify**: Integration tests pass once added
   - **Accept**: Shared households can manage money and cooking duties through the real app
+
+- [x] **Task 2: Add household-ops tests** `[BD:STG-175]`
+  - **Type**: task
+  - **Do**: Add API and browser tests for grocery cost splitting, custom weights, cook rotation scheduling, and household visibility of assignments.
+  - **Files**: `apps/api/tests/household-ops/`, `apps/web/tests/e2e/household-ops.spec.ts`
+  - **Verify**: The household-ops tests pass against the implemented features
+  - **Accept**: Cost-splitting and rotation expectations are confirmed before code changes
 
 - [ ] **Task 3: Refactor reminders, fairness rules, and household visibility** `[BD:STG-177]`
   - **Type**: task

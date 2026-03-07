@@ -1,4 +1,5 @@
 export * from './batch-prep'
+export * from './coaching'
 export * from './dietary-adaptation'
 export * from './events'
 export * from './fridge-clearance'
@@ -7,5 +8,6 @@ export * from './list'
 export * from './pantry'
 export * from './plan'
 export * from './potluck'
+export * from './household-ops'
 export * from './recipe'
 

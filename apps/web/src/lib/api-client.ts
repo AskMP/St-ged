@@ -42,6 +42,34 @@ export const apiClient = {
         body: JSON.stringify({ name }),
       })
     },
+    addCost(householdId: string, total: number, weights?: Record<string, number>) {
+      return request<any>(`/households/${householdId}/costs`, {
+        method: 'POST',
+        body: JSON.stringify({ total, weights }),
+      })
+    },
+    costHistory(householdId: string) {
+      return request<any>(`/households/${householdId}/costs`)
+    },
+    setRotation(
+      householdId: string,
+      frequency: 'weekly' | 'biweekly',
+      members: string[],
+      startDate?: string,
+    ) {
+      return request<any>(`/households/${householdId}/rotation`, {
+        method: 'POST',
+        body: JSON.stringify({ frequency, members, startDate }),
+      })
+    },
+    getRotation(householdId: string) {
+      return request<any>(`/households/${householdId}/rotation`)
+    },
+    getRotationAssignments(householdId: string, weeks = 4) {
+      return request<any>(
+        `/households/${householdId}/rotation/assignments?weeks=${weeks}`,
+      )
+    },
   },
   pantry: {
     applyTemplate(householdId: string, template: string) {

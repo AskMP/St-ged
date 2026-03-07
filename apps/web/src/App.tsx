@@ -11,6 +11,7 @@ import Planning from "./routes/Planning";
 import Potluck from "./routes/Potluck";
 import PotluckDetail from "./routes/PotluckDetail";
 import BatchPrep from "./routes/BatchPrep";
+import HouseholdOps from "./routes/HouseholdOps";
 import Recipes, { CookingView, RecipeDetail } from "./routes/Recipes";
 
 function App() {
@@ -42,6 +43,7 @@ function App() {
           <Link to="/potluck">Potluck</Link>
           <Link to="/fulfillment">Fulfillment</Link>
           <Link to="/batch-prep">Batch Prep</Link>
+          <Link to="/household-ops">Household Ops</Link>
         </nav>
       </header>
       <main className="p-4">
@@ -58,6 +60,7 @@ function App() {
           <Route path="/potluck/:id" element={<PotluckDetail />} />
           <Route path="/fulfillment" element={<FulfillmentPage />} />
           <Route path="/batch-prep" element={<BatchPrep />} />
+          <Route path="/household-ops" element={<HouseholdOps />} />
         </Routes>
       </main>
     </BrowserRouter>
