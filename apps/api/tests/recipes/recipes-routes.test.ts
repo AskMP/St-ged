@@ -23,6 +23,8 @@ describe('recipes routes', () => {
       method: 'GET',
     })
     expect(listRes.status).toBe(200)
+    const listBody = await listRes.json()
+    expect(Array.isArray(listBody)).toBe(true)
 
     // search filter example
     const searchRes = await app.request(`${BASE}/api/recipes?diet=vegan`, {

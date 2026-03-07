@@ -1,15 +1,17 @@
 import { Hono } from 'hono'
-import { HTTPException } from 'hono/http-exception'
-import { requireAuth, optionalAuth } from '../middleware/auth'
+import { optionalAuth, requireAuth } from '../middleware/auth'
 
+import type { PantryItem } from '@staged/types'
+import { getPantry } from '../services/pantry'
 import {
-  listRecipes,
-  getRecipe,
-  createRecipe,
-  importRecipeFromUrl,
-  scaleRecipe,
-  getSubstitutions,
-  deleteRecipe,
+    createRecipe,
+    deleteRecipe,
+    getRecipe,
+    getRecipeCost,
+    getSubstitutions,
+    importRecipeFromUrl,
+    listRecipes,
+    scaleRecipe,
 } from '../services/recipe-service'
 
 const recipesRouter = new Hono()
@@ -24,12 +26,23 @@ const recipesRouter = new Hono()
     if (diet) filters.diet = diet
 
     const data = await listRecipes(householdId, filters)
-    return c.json(data)
+    // API clients expect an array; unwrap before returning
+    return c.json(data.recipes)
   })
   .get('/:id', async (c) => {
     const id = c.req.param('id')
     const recipe = await getRecipe(id)
     return c.json(recipe)
+  })
+  .get('/:id/cost', async (c) => {
+    const id = c.req.param('id')
+    const householdId = c.req.query('householdId')
+    let pantryItems: PantryItem[] = []
+    if (householdId) {
+      pantryItems = await getPantry(householdId)
+    }
+    const cost = await getRecipeCost(id, pantryItems)
+    return c.json(cost)
   })
   .post('/', async (c) => {
     const body = await c.req.json()
