@@ -37,6 +37,22 @@ describe('household ops service', () => {
     expect(entry.splits['user3']).toBeCloseTo(30)
   })
 
+  it('rounds splits to cents and distributes remainder', async () => {
+    const hid = await makeHouseholdWithMembers(['user2', 'user3'])
+    // 100/3 should produce 33.34,33.33,33.33 or similar
+    const entry = await addCostEntry(hid, 100)
+    const values = Object.values(entry.splits).map((v) => Math.round(v * 100) / 100)
+    expect(values.reduce((a, b) => a + b, 0)).toBeCloseTo(100)
+    expect(values.some((v) => v === 33.34)).toBe(true)
+  })
+
+  it('handles zero-weight fallback to even split', async () => {
+    const hid = await makeHouseholdWithMembers(['user2'])
+    const entry = await addCostEntry(hid, 50, { user1: 0, user2: 0 })
+    expect(entry.splits['user1']).toBeCloseTo(25)
+    expect(entry.splits['user2']).toBeCloseTo(25)
+  })
+
   it('supports weighted splits', async () => {
     const hid = await makeHouseholdWithMembers(['user2'])
     const weights = { user1: 1, user2: 3 }

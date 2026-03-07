@@ -135,16 +135,61 @@ export async function addCostEntry(
   const members = h.members.map((m) => m.userId)
   const splits: Record<string, number> = {}
 
+  function roundCents(amount: number): number {
+    return Math.round(amount * 100) / 100
+  }
+
   if (weights && Object.keys(weights).length > 0) {
     const sum = Object.values(weights).reduce((a, b) => a + b, 0)
-    for (const member of members) {
-      const w = weights[member] ?? 0
-      splits[member] = sum > 0 ? (total * w) / sum : 0
+    if (sum === 0) {
+      // fallback to even split
+      const each = members.length > 0 ? total / members.length : 0
+      let assigned = 0
+      for (const member of members) {
+        splits[member] = roundCents(each)
+        assigned += splits[member]
+      }
+      let remainder = roundCents(total - assigned)
+      let i = 0
+      while (Math.abs(remainder) >= 0.005) {
+        const key = members[i % members.length]
+        splits[key] = roundCents(splits[key] + (remainder > 0 ? 0.01 : -0.01))
+        remainder += remainder > 0 ? -0.01 : 0.01
+        i++
+      }
+    } else {
+      // weighted split with rounding and remainder distribution
+      let assigned = 0
+      for (const member of members) {
+        const w = weights[member] ?? 0
+        const raw = (total * w) / sum
+        splits[member] = roundCents(raw)
+        assigned += splits[member]
+      }
+      // distribute any leftover cents due to rounding
+      let remainder = roundCents(total - assigned)
+      let idx = 0
+      while (Math.abs(remainder) >= 0.005) {
+        const key = members[idx % members.length]
+        splits[key] = roundCents(splits[key] + (remainder > 0 ? 0.01 : -0.01))
+        remainder += remainder > 0 ? -0.01 : 0.01
+        idx++
+      }
     }
   } else {
     const each = members.length > 0 ? total / members.length : 0
+    let assigned = 0
     for (const member of members) {
-      splits[member] = each
+      splits[member] = roundCents(each)
+      assigned += splits[member]
+    }
+    let remainder = roundCents(total - assigned)
+    let i = 0
+    while (Math.abs(remainder) >= 0.005) {
+      const key = members[i % members.length]
+      splits[key] = roundCents(splits[key] + (remainder > 0 ? 0.01 : -0.01))
+      remainder += remainder > 0 ? -0.01 : 0.01
+      i++
     }
   }
 

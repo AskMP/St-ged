@@ -42,12 +42,16 @@ export default function HouseholdOps() {
     }
   }, [hid])
 
+  const [showReminder, setShowReminder] = useState(false)
+
   const handleAddCost = async () => {
     if (!total) return
     try {
       const e = await apiClient.households.addCost(hid, parseFloat(total))
       setHistory((h) => [...h, e])
       setTotal('')
+      setShowReminder(true)
+      setTimeout(() => setShowReminder(false), 4000)
     } catch (err) {
       console.error(err)
     }
@@ -71,6 +75,14 @@ export default function HouseholdOps() {
 
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-2">Cost Splitting</h2>
+        {showReminder && (
+          <div
+            data-testid="cost-reminder"
+            className="mb-2 p-2 bg-yellow-100 text-yellow-800 rounded"
+          >
+            Reminder: notify household members of their share.
+          </div>
+        )}
         <div className="flex gap-2 mb-2">
           <input
             type="number"
@@ -89,28 +101,45 @@ export default function HouseholdOps() {
           </button>
         </div>
         {history.length > 0 && (
-          <table className="w-full text-sm" data-testid="cost-history">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Total</th>
-                <th>Splits</th>
-              </tr>
-            </thead>
-            <tbody>
-              {history.map((e) => (
-                <tr key={e.id}>
-                  <td>{e.date.split('T')[0]}</td>
-                  <td>${e.total.toFixed(2)}</td>
-                  <td>
-                    {Object.entries(e.splits)
-                      .map(([u, amt]) => `${u}: $${amt.toFixed(2)}`)
-                      .join(', ')}
-                  </td>
-                </tr>
+          <>
+            {/* running totals per member */}
+            <div data-testid="cost-totals" className="mb-2 text-sm text-stone-700">
+              {Object.entries(
+                history.reduce((acc, e) => {
+                  for (const [u, amt] of Object.entries(e.splits)) {
+                    acc[u] = (acc[u] || 0) + amt
+                  }
+                  return acc
+                }, {} as Record<string, number>),
+              ).map(([u, amt]) => (
+                <span key={u} className="mr-4">
+                  {u}: ${amt.toFixed(2)}
+                </span>
               ))}
-            </tbody>
-          </table>
+            </div>
+            <table className="w-full text-sm" data-testid="cost-history">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Total</th>
+                  <th>Splits</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.map((e) => (
+                  <tr key={e.id}>
+                    <td>{e.date.split('T')[0]}</td>
+                    <td>${e.total.toFixed(2)}</td>
+                    <td>
+                      {Object.entries(e.splits)
+                        .map(([u, amt]) => `${u}: $${amt.toFixed(2)}`)
+                        .join(', ')}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
         )}
       </section>
 

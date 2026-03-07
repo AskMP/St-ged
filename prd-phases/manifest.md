@@ -19,7 +19,7 @@ max_iterations: 100
 | Last completed PRD | 02-dietary-adaptation |
 | Timestamp | 2026-03-07 22:46:00 UTC |
 | Current phase | 2 (Launch) |
-| Progress | 31 / 38 PRDs complete |
+| Progress | 32 / 38 PRDs complete |
 
 ---
 
@@ -149,7 +149,7 @@ PRDs with `parallel_safe: true` and all `requires` satisfied may be executed con
 - [x] **02-batch-prep** | `prd-phases/02-launch/prd-02-batch-prep.md` | Batch Prep Mode: multi-recipe selection, cook sequencing, combined list, portioning view (F14) | status: complete | requires: 01-verify-runtime |
 - [x] **02-dietary-adaptation** | `prd-phases/02-launch/prd-02-dietary-adaptation.md` | Dietary Adaptation Mode: Make This Vegan/Dairy-Free, whole-recipe substitution (F15) | status: complete | requires: 01-verify-runtime |
 - [x] **02-coaching** | `prd-phases/02-launch/prd-02-coaching.md` | In-Step Contextual Coaching: technique glossary, ingredient explainers, inline tap-to-reveal (F16) | status: complete | requires: 01-verify-runtime |
-- [ ] **02-household-ops** | `prd-phases/02-launch/prd-02-household-ops.md` | Grocery Cost Splitting + Cook Rotation Scheduling (F27, F28) | status: pending | requires: 01-verify-runtime |
+- [x] **02-household-ops** | `prd-phases/02-launch/prd-02-household-ops.md` | Grocery Cost Splitting + Cook Rotation Scheduling (F27, F28) | status: complete | requires: 01-verify-runtime |
 - [ ] **02-fulfillment-v2** | `prd-phases/02-launch/prd-02-fulfillment-v2.md` | Instacart IDP full cart API (replace deep-link) + Kroger developer API + Chicory CPG integration | status: pending | requires: 01-verify-runtime |
 
 ### Group 3: Traction (Could Have)

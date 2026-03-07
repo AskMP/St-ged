@@ -35,6 +35,10 @@ describe('HouseholdOps page', () => {
     fireEvent.click(screen.getByTestId('cost-submit'))
 
     expect(await screen.findByText('user1: $50.00')).toBeVisible()
+    // totals summary should show the same amount
+    expect(await screen.findByTestId('cost-totals')).toContainText('user1: $50.00')
+    // reminder should appear
+    expect(await screen.findByTestId('cost-reminder')).toBeVisible()
   })
 
   it('sets rotation and shows assignments', async () => {

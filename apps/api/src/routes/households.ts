@@ -6,6 +6,11 @@ import {
     createHousehold,
     joinHousehold,
     listMembers,
+    addCostEntry,
+    getCostHistory,
+    setRotation,
+    getRotation,
+    getRotationAssignments,
 } from '../services/household-service'
 
 const householdsRouter = new Hono()

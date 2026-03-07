@@ -66,14 +66,14 @@ Adds household operations features for splitting grocery costs and scheduling co
   - **Verify**: The household-ops tests pass against the implemented features
   - **Accept**: Cost-splitting and rotation expectations are confirmed before code changes
 
-- [ ] **Task 3: Refactor reminders, fairness rules, and household visibility** `[BD:STG-177]`
+- [x] **Task 3: Refactor reminders, fairness rules, and household visibility** `[BD:STG-177]`
   - **Type**: task
   - **Do**: Tighten fairness/rotation logic, reminder surfaces, and cost history visibility so the feature remains understandable over time.
   - **Files**: `apps/api/src/services/`, `apps/web/src/components/`
   - **Verify**: Tests remain green after cleanup
   - **Accept**: Household ops feels maintainable and trustworthy
 
-- [ ] **Task 4: Verify shared-household runtime flows** `[BD:STG-178]`
+- [x] **Task 4: Verify shared-household runtime flows** `[BD:STG-178]`
   - **Type**: task
   - **Do**: Run browser E2E for cost entry, splitting, and rotation viewing in a shared-household scenario.
   - **Files**: `apps/web/tests/e2e/household-ops.spec.ts`
