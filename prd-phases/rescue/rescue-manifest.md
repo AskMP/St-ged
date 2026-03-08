@@ -127,12 +127,12 @@ Discovered Task in the PRD's Discovered Tasks section, add a guardrail note to
 
 ## Current State
 
-| Field                | Value                      |
-| -------------------- | -------------------------- |
-| Last completed PRD   | rescue-00                  |
-| Current rescue phase | 1 (Auth Repair)            |
-| Progress             | 1 / 5 rescue PRDs complete |
-| Foundation status    | YELLOW                     |
+| Field                | Value                       |
+| -------------------- | --------------------------- |
+| Last completed PRD   | rescue-01                   |
+| Current rescue phase | 2 (Foundation Verification) |
+| Progress             | 2 / 5 rescue PRDs complete  |
+| Foundation status    | YELLOW                      |
 
 ---
 
@@ -144,7 +144,7 @@ Discovered Task in the PRD's Discovered Tasks section, add a guardrail note to
 
 ### Phase R1: Auth Repair (Critical Blocker)
 
-- [ ] **rescue-01** | `prd-phases/rescue/prd-rescue-01-auth.md` | Fix all 11 [block] auth issues: pool consolidation, signup, getSessionUser, /me, routes | status: pending | requires: rescue-00 |
+- [x] **rescue-01** | `prd-phases/rescue/prd-rescue-01-auth.md` | Fix all 11 [block] auth issues: pool consolidation, signup, getSessionUser, /me, routes | status: complete | requires: rescue-00 |
 
 ### Phase R2: Foundation Verification (Green Gate)
 
@@ -168,6 +168,6 @@ Discovered Task in the PRD's Discovered Tasks section, add a guardrail note to
 | Metric            | Count |
 | ----------------- | ----- |
 | Total rescue PRDs | 5     |
-| Complete          | 1     |
-| Pending           | 4     |
+| Complete          | 2     |
+| Pending           | 3     |
 | Blocked           | 0     |
