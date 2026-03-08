@@ -51,8 +51,9 @@ describe('fulfillment routes', () => {
       headers: { 'x-test-user-id': 'user1' },
     })
     expect(provRes.status).toBe(200)
-    const { providers } = await provRes.json()
+    const { providers, default: def } = await provRes.json()
     expect(providers).toEqual(expect.arrayContaining(['deep-link', 'instacart']))
+    expect(def).toBe('instacart')
 
     // generic link with explicit provider
     const genericRes = await app.request('http://localhost/api/fulfillment/link', {

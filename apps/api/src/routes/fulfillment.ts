@@ -13,7 +13,12 @@ const fulfillmentRouter = new Hono()
     const user = c.get('user')
     const hid = user.householdId
     const providers = await fulfillmentService.getAvailableProviders(hid)
-    return c.json({ providers })
+    // choose a default: prefer instacart-official, then instacart, then others
+    let defaultProv: string | undefined
+    if (providers.includes('instacart-official')) defaultProv = 'instacart-official'
+    else if (providers.includes('instacart')) defaultProv = 'instacart'
+    else defaultProv = providers[0]
+    return c.json({ providers, default: defaultProv })
   })
   // generic link generation; provider can be passed in body
   .post('/link', async (c) => {

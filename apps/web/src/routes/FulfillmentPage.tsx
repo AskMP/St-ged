@@ -18,6 +18,7 @@ export default function FulfillmentPage() {
   const [linkData, setLinkData] = useState<FulfillmentLink | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [note, setNote] = useState<string | null>(null)
 
   // fetch available providers once
   useEffect(() => {
@@ -26,7 +27,8 @@ export default function FulfillmentPage() {
       .getProviders()
       .then((res) => {
         setProviders(res.providers)
-        if (res.providers.includes('instacart')) {
+        if (res.default) setSelectedProvider(res.default as FulfillmentProvider)
+        else if (res.providers.includes('instacart')) {
           setSelectedProvider('instacart')
         }
       })
@@ -40,9 +42,16 @@ export default function FulfillmentPage() {
     if (!listId) return
     setLoading(true)
     setError(null)
+    setNote(null)
     apiClient.fulfillment
       .generateLink(listId, selectedProvider)
-      .then((data) => setLinkData(data))
+      .then((data) => {
+        setLinkData(data)
+        if (data.provider && data.provider !== selectedProvider) {
+          setNote(`Using available provider: ${data.provider.replace('-', ' ')}`)
+          setSelectedProvider(data.provider as FulfillmentProvider)
+        }
+      })
       .catch((err: unknown) =>
         setError(err instanceof Error ? err.message : 'Failed to generate link')
       )
@@ -94,6 +103,15 @@ export default function FulfillmentPage() {
               </option>
             ))}
           </select>
+        </div>
+      )}
+
+      {note && (
+        <div
+          data-testid="provider-note"
+          className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800"
+        >
+          {note}
         </div>
       )}
 

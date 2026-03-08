@@ -39,12 +39,16 @@ function renderFulfillment(search = '?listId=list-1') {
 
 beforeEach(() => {
   vi.mocked(apiClient.apiClient.fulfillment.generateLink).mockResolvedValue(mockLinkData)
-  vi.mocked(apiClient.apiClient.fulfillment.getProviders).mockResolvedValue({ providers: ['instacart'] })
+  vi.mocked(apiClient.apiClient.fulfillment.getProviders).mockResolvedValue({ providers: ['instacart'], default: 'instacart' })
 })
 
-describe('FulfillmentPage', () => {
-  it('renders the page heading', async () => {
+  it('sets selected provider based on default from server', async () => {
     renderFulfillment()
+    await waitFor(() => {
+      const select = screen.getByTestId('provider-select') as HTMLSelectElement
+      expect(select.value).toBe('instacart')
+    })
+  })
     await waitFor(() => {
       expect(screen.getByTestId('fulfillment-page')).toBeInTheDocument()
     })
@@ -87,13 +91,19 @@ describe('FulfillmentPage', () => {
     })
     const select = screen.getByTestId('provider-select') as HTMLSelectElement
     expect(select.value).toBe('instacart')
-    // simulate user choosing an unsupported provider; component should still call generateLink
-    vi.mocked(apiClient.apiClient.fulfillment.generateLink).mockClear()
+    // simulate a fallback from server
+    const fallbackData = { ...mockLinkData, provider: 'kroger' }
+    vi.mocked(apiClient.apiClient.fulfillment.generateLink).mockResolvedValue(fallbackData)
     select.value = 'kroger'
     select.dispatchEvent(new Event('change', { bubbles: true }))
     await waitFor(() => {
       expect(apiClient.apiClient.fulfillment.generateLink).toHaveBeenCalledWith('my-list-42', 'kroger')
     })
+    await waitFor(() => {
+      expect(screen.getByTestId('provider-note')).toHaveTextContent('Using available provider: kroger')
+    })
+    // selectedProvider should sync to returned provider
+    expect(select.value).toBe('kroger')
   })
 
   it('renders sponsored items if present', async () => {
