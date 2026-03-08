@@ -1,3 +1,12 @@
+## Rescue Iteration 2 -- rescue-01: Auth Layer Repair (STG-216..STG-222)
+
+- **Status**: Complete
+- **Branch**: stg-unj/rescue-00-schema (commit f661694)
+- **Tasks completed**: 7/7 -- lib/db.ts shared pool, auth.ts fixed types+pool, routes/auth.ts signup fix + /me householdId, auth-service.ts getSessionUser token.sub fix, index.ts dedup authRouter, auth smoke tests unskipped, CORRECTION_LOG + manifest updated
+- **Patterns discovered**: DrizzleAdapter does not need schema arg to work; `@staged/db` cannot be resolved by vitest without path alias config -- use relative path or omit schema; Auth.js JWT always sets token.sub (not token.user); db.ts must NOT import @staged/db schema to avoid vitest load failures; fixtures needing households require created_by UUID
+- **Gotchas**: vitest uses `--testPathPattern` option from Jest but vitest uses positional arg pattern instead; `new Pool()` without a uuid for user id will fail FK constraint on households.created_by; auth.ts session callback must use `any` types due to @auth/core type union complexity
+- **Test result**: 79 passed, 5 skipped, 0 failing
+
 ## Rescue Iteration 1 -- rescue-00: Drizzle Schema Ground-Up (STG-200..STG-210)
 
 - **Status**: Complete
