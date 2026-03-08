@@ -9,6 +9,10 @@
   "scripts": {
     "type-check": "tsc --noEmit"
   },
+  "dependencies": {
+    "@staged/db": "workspace:*",
+    "drizzle-orm": "^0.45.1"
+  },
   "devDependencies": {
     "typescript": "^5.0.0"
   }

@@ -8,16 +8,20 @@
   },
   "scripts": {
     "type-check": "tsc --noEmit",
-    "migrate": "drizzle-kit migrate",
-    "generate": "drizzle-kit generate"
+    "migrate": "dotenv -e ../../.env.local -- tsx src/migrate.ts",
+    "generate": "drizzle-kit generate",
+    "seed": "dotenv -e ../../.env.local -- tsx src/seeds/index.ts",
+    "studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "drizzle-orm": "^0.30.0",
+    "drizzle-orm": "^0.45.1",
     "pg": "^8.0.0"
   },
   "devDependencies": {
-    "drizzle-kit": "^0.20.0",
-    "typescript": "^5.0.0",
-    "@types/pg": "^8.0.0"
+    "@types/pg": "^8.0.0",
+    "dotenv-cli": "^11.0.0",
+    "drizzle-kit": "^0.31.9",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
   }
 }
