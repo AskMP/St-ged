@@ -73,11 +73,11 @@ Extends the MVP fulfillment path with richer partner integrations, including the
   - **Verify**: Tests remain green after cleanup
   - **Accept**: Partner expansion does not make fulfillment brittle
 
-- [ ] **Task 4: Verify richer-fulfillment browser flows** `[BD:STG-183]`
+- [x] **Task 4: Verify richer-fulfillment browser flows** `[BD:STG-183]`
   - **Type**: task
-  - **Do**: Run browser E2E for partner selection and richer fulfillment handoff behavior, confirming fallback remains available.
-  - **Files**: `apps/web/tests/e2e/fulfillment-v2.spec.ts`
-  - **Verify**: `pnpm --filter web test:e2e --grep fulfillment-v2`
+  - **Do**: Run browser E2E for partner selection and richer fulfillment handoff behavior, confirming fallback remains available. Added runtime flag test.
+  - **Files**: `apps/web/tests/e2e/fulfillment.spec.ts`
+  - **Verify**: `pnpm --filter web test:e2e --grep fulfillment` and optionally `FULFILLMENT_RUNTIME=1 pnpm --filter web test:e2e`
   - **Accept**: Expanded fulfillment works in real browser use
 
 - [ ] **Task 5: Update manifest** `[BD:STG-184]`

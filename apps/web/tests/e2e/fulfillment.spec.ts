@@ -10,7 +10,7 @@ test.describe('Fulfillment page', () => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ providers: ['instacart'] }),
+        body: JSON.stringify({ providers: ['instacart', 'kroger'] }),
       })
     })
 
@@ -57,15 +57,22 @@ test.describe('Fulfillment page', () => {
   })
 
   test('provider selector appears and switching triggers API', async ({ page }) => {
-    let lastProvider: string | undefined
+    // intercept providers list to include multiple options
+    await page.route('**/fulfillment/providers', (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ providers: ['instacart', 'kroger'] }),
+      })
+    })
+    // also intercept link so page doesn't actually navigate
     await page.route('**/fulfillment/link', (route) => {
       const post = route.request().postDataJSON()
-      lastProvider = post.provider
       route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          provider: lastProvider || 'instacart',
+          provider: post.provider,
           url: 'https://www.instacart.com',
           token: 'tok',
           attribution: { affiliate: 'a' },
@@ -76,7 +83,13 @@ test.describe('Fulfillment page', () => {
     const select = page.getByTestId('provider-select')
     await expect(select).toBeVisible()
     await select.selectOption('kroger')
-    expect(lastProvider).toBe('kroger')
+
+    // wait for the POST request to fire and verify body
+    const req = await page.waitForRequest((req) =>
+      req.url().includes('/fulfillment/link') && req.method() === 'POST'
+    )
+    const body = req.postDataJSON()
+    expect(body.provider).toBe('kroger')
   })
 
   test('renders partner attribution metadata', async ({ page }) => {
@@ -94,8 +107,8 @@ test.describe('Fulfillment page', () => {
   })
 
   test('shows error when API fails', async ({ page }) => {
-    await page.unroute('**/fulfillment/instacart-link')
-    await page.route('**/fulfillment/instacart-link', (route) => {
+    await page.unroute('**/fulfillment/link')
+    await page.route('**/fulfillment/link', (route) => {
       route.fulfill({ status: 500, body: 'Internal Server Error' })
     })
     await page.goto('/fulfillment?listId=list-e2e')
@@ -120,5 +133,21 @@ test.describe('Fulfillment page', () => {
       await expect(cta).toBeVisible()
       await expect(cta).toHaveAttribute('href', /instacart\.com/)
     })
+  })
+
+  test('runtime fulfillment flow (requires API server)', async ({ page, context }) => {
+    test.skip(process.env.FULFILLMENT_RUNTIME !== '1', 'set FULFILLMENT_RUNTIME=1 and run web+api dev servers')
+    // create household, list, and item via real API
+    const hres = await context.request.post('http://localhost:3000/api/households', { data: { name: 'LiveHouse' } })
+    const { id: hid } = await hres.json()
+    const lres = await context.request.post(`http://localhost:3000/api/households/${hid}/lists`, { data: {} })
+    const list = await lres.json()
+    await context.request.post(`http://localhost:3000/api/lists/${list.id}/items`, { data: { name: 'Eggs' } })
+
+    // navigate to fulfillment page using real API
+    await page.goto(`/fulfillment?listId=${list.id}`)
+    await expect(page.getByTestId('instacart-cta')).toBeVisible()
+    // provider-select should appear (service will return default providers)
+    await expect(page.getByTestId('provider-select')).toBeVisible()
   })
 })
