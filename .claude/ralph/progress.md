@@ -1,3 +1,14 @@
+## SESSION BREAK -- 2026-03-08 (context limit reached)
+
+- **Status**: Paused mid-rescue. Resume with `/ralph prd-phases/rescue/rescue-manifest.md`
+- **Next PRD**: rescue-02 (Foundation Verification) -- `prd-phases/rescue/prd-rescue-02-verify.md`
+- **Gate tasks**: STG-231 through STG-237 -- NONE started yet
+- **Manifest state**: rescue-00 complete, rescue-01 complete, rescue-02 pending (no bd tasks created yet)
+- **Branch**: stg-unj/rescue-00-schema (all rescue-00 + rescue-01 commits pushed)
+- **Resume instructions**: Ralph auto-selects rescue-02 as first pending PRD. rescue-02 is verification-only (QA Lead role -- no new features). Requires Docker Compose postgres running and .env.local with DATABASE_URL.
+
+---
+
 ## Rescue Iteration 2 -- rescue-01: Auth Layer Repair (STG-216..STG-222)
 
 - **Status**: Complete
