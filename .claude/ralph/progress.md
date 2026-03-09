@@ -284,3 +284,14 @@
 - **Patterns discovered**: [pending]
 - **Gotchas**: [pending]
 - **Time**: $(date -u)
+
+## Rescue Iteration 5 -- rescue-04: UX Ground-Up Rebuild (COMPLETE)
+
+- **Status**: COMPLETE -- rescue-04 all 13 tasks done; rescue manifest 5/5 complete
+- **Branch**: stg-unj/rescue-00-schema (commits daccf5f, ee077de, 84034b2, c385b0c)
+- **Tasks completed**: 13/13 -- Task 11 (E2E specs), Task 12 (PWA icons/manifest), Task 13 (CORRECTION_LOG + manifest), plus vitest @/ alias fix and unit test updates
+- **Tests**: 82 web unit + 79 API = 161 tests passing; 0 failing
+- **Key finding**: vitest.config.ts was missing resolve.alias for @/ -- caused 6 test file failures when rebuilt components imported via @/ alias. Fixed by adding resolve.alias alongside vite.config.ts.
+- **E2E specs written**: onboarding.spec.ts (Jordan), planning.spec.ts (Darius), recipes.spec.ts (Maya), pwa-shell.spec.ts (offline smoke test)
+- **PWA fix**: vite-plugin-pwa manifest had empty icons array; added SVG icons + background_color/display/start_url fields required for Chrome installability
+- **Rescue complete**: All 5 rescue PRDs complete. Schema built, auth fixed, service layer typed, UX rebuilt persona-first. CORRECTION_LOG.md has 31 rows documenting every correction.
