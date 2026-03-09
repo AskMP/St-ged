@@ -16,6 +16,8 @@ export * from "./pantry";
 export * from "./syncQueue";
 export * from "./userRecipeLibrary";
 export * from "./usdaIngredients";
+export * from "./householdCosts";
+export * from "./cookRotations";
 
 // Drizzle relations -- used by relational query API (db.query.*)
 import { relations } from "drizzle-orm";
@@ -32,6 +34,8 @@ import { mealPlanEntries } from "./mealPlanEntries";
 import { pantry, pantryItems } from "./pantry";
 import { syncQueue } from "./syncQueue";
 import { userRecipeLibrary } from "./userRecipeLibrary";
+import { householdCosts } from "./householdCosts";
+import { cookRotations } from "./cookRotations";
 
 export const householdsRelations = relations(households, ({ one, many }) => ({
   members: many(householdMembers),
@@ -170,3 +174,17 @@ export const userRecipeLibraryRelations = relations(
     }),
   }),
 );
+
+export const householdCostsRelations = relations(householdCosts, ({ one }) => ({
+  household: one(households, {
+    fields: [householdCosts.householdId],
+    references: [households.id],
+  }),
+}));
+
+export const cookRotationsRelations = relations(cookRotations, ({ one }) => ({
+  household: one(households, {
+    fields: [cookRotations.householdId],
+    references: [households.id],
+  }),
+}));

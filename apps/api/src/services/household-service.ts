@@ -1,65 +1,101 @@
-import { v4 as uuidv4 } from "uuid";
+import { db } from "../lib/db";
+import {
+  households,
+  householdMembers,
+  users,
+  householdCosts,
+  cookRotations,
+} from "@staged/db";
+import { eq, and } from "drizzle-orm";
+import { nanoid } from "nanoid";
 
-// simplistic in-memory storage. later this will be backed by a real database
-interface Member {
-  userId: string;
-  role: "owner" | "member" | "guest";
-}
-
-interface HouseholdRecord {
-  id: string;
-  name: string;
-  inviteCode: string;
-  members: Member[];
-}
-
-const HOUSEHOLDS: HouseholdRecord[] = [];
-
-function generateInviteCode() {
-  // three random alphanumeric words
-  return Array(3)
-    .fill(0)
-    .map(() => Math.random().toString(36).substring(2, 8))
-    .join("-");
-}
+// ---- Household CRUD ----
 
 export async function createHousehold(name: string, creatorId: string) {
-  const id = uuidv4();
-  const inviteCode = generateInviteCode();
-  const record: HouseholdRecord = {
-    id,
-    name,
-    inviteCode,
-    members: [{ userId: creatorId, role: "owner" }],
-  };
-  HOUSEHOLDS.push(record);
-  return { id, inviteCode };
+  const inviteCode = nanoid(10);
+
+  const [household] = await db
+    .insert(households)
+    .values({ name, inviteCode, createdBy: creatorId })
+    .returning({ id: households.id, inviteCode: households.inviteCode });
+
+  if (!household) throw new Error("Failed to create household");
+
+  await db.insert(householdMembers).values({
+    householdId: household.id,
+    userId: creatorId,
+    role: "owner",
+  });
+
+  // Set this as the user's active household if they have none
+  await db
+    .update(users)
+    .set({ householdId: household.id })
+    .where(eq(users.id, creatorId));
+
+  return { id: household.id, inviteCode: household.inviteCode };
 }
 
 export async function joinHousehold(code: string, userId: string) {
-  const h = HOUSEHOLDS.find((h) => h.inviteCode === code);
-  if (!h) {
+  const [household] = await db
+    .select({ id: households.id })
+    .from(households)
+    .where(eq(households.inviteCode, code))
+    .limit(1);
+
+  if (!household) {
     const err: any = new Error("Not found");
     err.status = 404;
     throw err;
   }
-  if (h.members.some((m) => m.userId === userId)) {
-    const err: any = new Error("Already joined");
-    err.status = 409;
-    throw err;
-  }
-  h.members.push({ userId, role: "member" });
+
+  // Idempotent: skip if already a member
+  await db
+    .insert(householdMembers)
+    .values({ householdId: household.id, userId, role: "member" })
+    .onConflictDoNothing();
+
+  // Set active household if user has none
+  await db
+    .update(users)
+    .set({ householdId: household.id })
+    .where(and(eq(users.id, userId)));
+
   return { success: true };
 }
 
 export async function listMembers(householdId: string) {
-  const h = HOUSEHOLDS.find((h) => h.id === householdId);
-  if (!h) {
-    const err: any = new Error("Household not found");
-    err.status = 404;
-    throw err;
+  const rows = await db
+    .select({
+      userId: householdMembers.userId,
+      role: householdMembers.role,
+      displayName: users.displayName,
+      email: users.email,
+    })
+    .from(householdMembers)
+    .innerJoin(users, eq(householdMembers.userId, users.id))
+    .where(eq(householdMembers.householdId, householdId));
+
+  if (rows.length === 0) {
+    // Check if household exists at all
+    const [h] = await db
+      .select({ id: households.id })
+      .from(households)
+      .where(eq(households.id, householdId))
+      .limit(1);
+    if (!h) {
+      const err: any = new Error("Household not found");
+      err.status = 404;
+      throw err;
+    }
   }
-  return h.members;
+
+  return rows.map((r) => ({
+    userId: r.userId,
+    role: r.role,
+    name: r.displayName,
+    email: r.email,
+  }));
 }
 
 export async function changeMemberRole(
@@ -68,62 +104,94 @@ export async function changeMemberRole(
   role: string,
   requesterId: string,
 ) {
-  const h = HOUSEHOLDS.find((h) => h.id === householdId);
-  if (!h) {
-    const err: any = new Error("Household not found");
-    err.status = 404;
-    throw err;
-  }
-  // only owner can change roles
-  const requester = h.members.find((m) => m.userId === requesterId);
+  // Verify requester is owner
+  const [requester] = await db
+    .select({ role: householdMembers.role })
+    .from(householdMembers)
+    .where(
+      and(
+        eq(householdMembers.householdId, householdId),
+        eq(householdMembers.userId, requesterId),
+      ),
+    )
+    .limit(1);
+
   if (!requester || requester.role !== "owner") {
     const err: any = new Error("Unauthorized");
-    err.status = 401;
+    err.status = 403;
     throw err;
   }
-  const member = h.members.find((m) => m.userId === userId);
-  if (!member) {
+
+  const result = await db
+    .update(householdMembers)
+    .set({ role })
+    .where(
+      and(
+        eq(householdMembers.householdId, householdId),
+        eq(householdMembers.userId, userId),
+      ),
+    )
+    .returning({ userId: householdMembers.userId });
+
+  if (result.length === 0) {
     const err: any = new Error("Member not found");
     err.status = 404;
     throw err;
   }
-  member.role = role as Member["role"];
+
   return { success: true };
 }
 
 export async function getHouseholdByInvite(code: string) {
-  return HOUSEHOLDS.find((h) => h.inviteCode === code);
+  const [h] = await db
+    .select()
+    .from(households)
+    .where(eq(households.inviteCode, code))
+    .limit(1);
+  return h;
 }
 
-// authorization helpers for later modules
 export async function canAddGuest(
   householdId: string,
   userId: string,
 ): Promise<boolean> {
-  const h = HOUSEHOLDS.find((h) => h.id === householdId);
-  if (!h) return false;
-  return h.members.some(
-    (m) => m.userId === userId && (m.role === "owner" || m.role === "member"),
-  );
+  const [member] = await db
+    .select({ role: householdMembers.role })
+    .from(householdMembers)
+    .where(
+      and(
+        eq(householdMembers.householdId, householdId),
+        eq(householdMembers.userId, userId),
+      ),
+    )
+    .limit(1);
+
+  if (!member) return false;
+  return member.role === "owner" || member.role === "member";
 }
 
 export async function verifyHouseholdAccess(
   householdId: string,
   userId: string,
 ) {
-  const h = HOUSEHOLDS.find((h) => h.id === householdId);
-  if (!h) {
-    const err: any = new Error("Household not found");
-    err.status = 404;
-    throw err;
-  }
-  const m = h.members.find((m) => m.userId === userId);
-  if (!m) {
+  const [member] = await db
+    .select({ role: householdMembers.role })
+    .from(householdMembers)
+    .where(
+      and(
+        eq(householdMembers.householdId, householdId),
+        eq(householdMembers.userId, userId),
+      ),
+    )
+    .limit(1);
+
+  if (!member) {
     const err: any = new Error("Not a member");
-    err.status = 401;
+    err.status = 403;
     throw err;
   }
-  return { household: h, member: m };
+
+  return { role: member.role };
 }
 
 // ---- Household ops: cost splitting & rotation ----
@@ -136,26 +204,16 @@ interface CostEntry {
   date: string;
 }
 
-const COST_ENTRIES: CostEntry[] = [];
+function roundCents(amount: number): number {
+  return Math.round(amount * 100) / 100;
+}
 
-export async function addCostEntry(
-  householdId: string,
+function computeSplits(
+  members: string[],
   total: number,
   weights?: Record<string, number>,
-): Promise<CostEntry> {
-  const h = HOUSEHOLDS.find((h) => h.id === householdId);
-  if (!h) {
-    const err: any = new Error("Household not found");
-    err.status = 404;
-    throw err;
-  }
-
-  const members = h.members.map((m) => m.userId);
+): Record<string, number> {
   const splits: Record<string, number> = {};
-
-  function roundCents(amount: number): number {
-    return Math.round(amount * 100) / 100;
-  }
 
   if (weights && Object.keys(weights).length > 0) {
     const sum = Object.values(weights).reduce((a, b) => a + b, 0);
@@ -165,7 +223,7 @@ export async function addCostEntry(
       let assigned = 0;
       for (const member of members) {
         splits[member] = roundCents(each);
-        assigned += splits[member];
+        assigned += splits[member]!;
       }
       let remainder = roundCents(total - assigned);
       let i = 0;
@@ -182,9 +240,8 @@ export async function addCostEntry(
         const w = weights[member] ?? 0;
         const raw = (total * w) / sum;
         splits[member] = roundCents(raw);
-        assigned += splits[member];
+        assigned += splits[member]!;
       }
-      // distribute any leftover cents due to rounding
       let remainder = roundCents(total - assigned);
       let idx = 0;
       while (Math.abs(remainder) >= 0.005) {
@@ -199,7 +256,7 @@ export async function addCostEntry(
     let assigned = 0;
     for (const member of members) {
       splits[member] = roundCents(each);
-      assigned += splits[member];
+      assigned += splits[member]!;
     }
     let remainder = roundCents(total - assigned);
     let i = 0;
@@ -211,24 +268,71 @@ export async function addCostEntry(
     }
   }
 
-  const entry: CostEntry = {
-    id: uuidv4(),
-    householdId,
-    total,
-    splits,
-    date: new Date().toISOString(),
+  return splits;
+}
+
+export async function addCostEntry(
+  householdId: string,
+  total: number,
+  weights?: Record<string, number>,
+): Promise<CostEntry> {
+  // Get members from DB to compute splits
+  const memberRows = await db
+    .select({ userId: householdMembers.userId })
+    .from(householdMembers)
+    .where(eq(householdMembers.householdId, householdId));
+
+  if (memberRows.length === 0) {
+    const err: any = new Error("Household not found");
+    err.status = 404;
+    throw err;
+  }
+
+  const memberIds = memberRows.map((m) => m.userId);
+  const splits = computeSplits(memberIds, total, weights);
+
+  const [entry] = await db
+    .insert(householdCosts)
+    .values({ householdId, total, splits, date: new Date() })
+    .returning({
+      id: householdCosts.id,
+      householdId: householdCosts.householdId,
+      total: householdCosts.total,
+      splits: householdCosts.splits,
+      date: householdCosts.date,
+    });
+
+  if (!entry) throw new Error("Failed to insert cost entry");
+
+  return {
+    id: entry.id,
+    householdId: entry.householdId,
+    total: entry.total,
+    splits: entry.splits as Record<string, number>,
+    date: entry.date.toISOString(),
   };
-  COST_ENTRIES.push(entry);
-  return entry;
 }
 
 export async function getCostHistory(
   householdId: string,
 ): Promise<CostEntry[]> {
-  return COST_ENTRIES.filter((e) => e.householdId === householdId);
+  const rows = await db
+    .select()
+    .from(householdCosts)
+    .where(eq(householdCosts.householdId, householdId))
+    .orderBy(householdCosts.date);
+
+  return rows.map((r) => ({
+    id: r.id,
+    householdId: r.householdId,
+    total: r.total,
+    splits: r.splits as Record<string, number>,
+    date: r.date.toISOString(),
+  }));
 }
 
-// rotation settings stored per household
+// ---- Cook rotation ----
+
 interface RotationSettings {
   householdId: string;
   frequency: "weekly" | "biweekly";
@@ -236,33 +340,44 @@ interface RotationSettings {
   startDate: string; // ISO date string
 }
 
-const ROTATIONS: RotationSettings[] = [];
-
 export async function setRotation(
   householdId: string,
   frequency: "weekly" | "biweekly",
   members: string[],
   startDate?: string,
 ): Promise<RotationSettings> {
-  const existing = ROTATIONS.find((r) => r.householdId === householdId);
-  const settings: RotationSettings = {
-    householdId,
-    frequency,
-    members,
-    startDate: startDate || new Date().toISOString(),
-  };
-  if (existing) {
-    Object.assign(existing, settings);
-    return existing;
-  }
-  ROTATIONS.push(settings);
-  return settings;
+  const start = startDate
+    ? new Date(startDate).toISOString().split("T")[0]!
+    : new Date().toISOString().split("T")[0]!;
+
+  await db
+    .insert(cookRotations)
+    .values({ householdId, frequency, members, startDate: start })
+    .onConflictDoUpdate({
+      target: cookRotations.householdId,
+      set: { frequency, members, startDate: start },
+    });
+
+  return { householdId, frequency, members, startDate: start };
 }
 
 export async function getRotation(
   householdId: string,
 ): Promise<RotationSettings | undefined> {
-  return ROTATIONS.find((r) => r.householdId === householdId);
+  const [row] = await db
+    .select()
+    .from(cookRotations)
+    .where(eq(cookRotations.householdId, householdId))
+    .limit(1);
+
+  if (!row) return undefined;
+
+  return {
+    householdId: row.householdId,
+    frequency: row.frequency as "weekly" | "biweekly",
+    members: row.members as string[],
+    startDate: row.startDate,
+  };
 }
 
 // compute upcoming assignments for next N weeks (default 4)
@@ -270,23 +385,22 @@ export async function getRotationAssignments(
   householdId: string,
   weeks = 4,
 ): Promise<{ date: string; userId: string }[]> {
-  const s = ROTATIONS.find((r) => r.householdId === householdId);
-  if (!s) {
-    return [];
-  }
-  const result: { date: string; userId: string }[] = [];
-  if (s.members.length === 0) return result;
+  const rotation = await getRotation(householdId);
+  if (!rotation || rotation.members.length === 0) return [];
 
-  const start = new Date(s.startDate);
+  const result: { date: string; userId: string }[] = [];
+  const start = new Date(rotation.startDate);
+
   for (let i = 0; i < weeks; i++) {
-    const offsetDays = i * 7 * (s.frequency === "biweekly" ? 2 : 1);
+    const offsetDays = i * 7 * (rotation.frequency === "biweekly" ? 2 : 1);
     const d = new Date(start);
     d.setDate(d.getDate() + offsetDays);
-    const idx = i % s.members.length;
+    const idx = i % rotation.members.length;
     result.push({
       date: d.toISOString().split("T")[0]!,
-      userId: s.members[idx]!,
+      userId: rotation.members[idx]!,
     });
   }
+
   return result;
 }

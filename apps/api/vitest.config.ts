@@ -15,6 +15,12 @@ export default defineConfig({
     environment: "node",
     include: ["tests/**/*.test.ts"],
     testTimeout: 10000,
+    // Run test files sequentially to avoid DB state conflicts between suites
+    // (auth tests truncate users/households which conflicts with parallel suites).
+    pool: "forks",
+    poolOptions: {
+      forks: { singleFork: true },
+    },
     env: {
       DATABASE_URL:
         "postgresql://staged:staged_dev_password@localhost:5432/staged_dev",
