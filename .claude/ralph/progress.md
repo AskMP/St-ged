@@ -1,3 +1,18 @@
+## Rescue Iteration 3 -- rescue-02: Foundation Verification (Green Gate)
+
+- **Status**: Complete
+- **Branch**: stg-unj/rescue-00-schema (commit pending)
+- **Tasks completed**: 7/7 -- schema check, type-check (fixed 5 issues), auth tests, health endpoint, auth curl flow, seed verification, manifest updated
+- **Type-check fixes**: hono-types.ts AppVariables for Hono context typing; noUncheckedIndexedAccess ! assertions in household-service/list-service/pantry; cost-serving added to types barrel + dist rebuilt; socket.ts interfaces exported; SessionUser.householdId added
+- **Gate verdict**: GREEN -- all 7 gate criteria pass
+- **Tests**: 79 passed, 5 skipped, 0 failing (identical to rescue-01 baseline)
+- **Patterns discovered**: noUncheckedIndexedAccess:true in root tsconfig means ALL array[n] access returns T|undefined; stale dist/ in composite packages must be rebuilt after barrel changes (npx tsc --build); Hono Variables type must be passed at construction time to enable typed c.get()
+- **Gotchas**: dotenv-cli loads .env.local but DATABASE_URL in placeholder .env.local was wrong -- always export DATABASE_URL explicitly or fix .env.local; running API on port 3000 from prior session -- kill before starting new dev server; TS4023 on exported io requires exporting the interface types from socket.ts
+- **Next PRDs**: rescue-03 (service layer) and rescue-04 (UX rebuild) both unblocked; may run in parallel on separate branches
+- **Time**: 2026-03-08
+
+---
+
 ## SESSION BREAK -- 2026-03-08 (context limit reached)
 
 - **Status**: Paused mid-rescue. Resume with `/ralph prd-phases/rescue/rescue-manifest.md`

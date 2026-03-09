@@ -129,10 +129,10 @@ Discovered Task in the PRD's Discovered Tasks section, add a guardrail note to
 
 | Field                | Value                       |
 | -------------------- | --------------------------- |
-| Last completed PRD   | rescue-01                   |
-| Current rescue phase | 2 (Foundation Verification) |
-| Progress             | 2 / 5 rescue PRDs complete  |
-| Foundation status    | YELLOW                      |
+| Last completed PRD   | rescue-02                   |
+| Current rescue phase | 3 (Service Layer Migration) |
+| Progress             | 3 / 5 rescue PRDs complete  |
+| Foundation status    | GREEN                       |
 
 ---
 
@@ -148,7 +148,7 @@ Discovered Task in the PRD's Discovered Tasks section, add a guardrail note to
 
 ### Phase R2: Foundation Verification (Green Gate)
 
-- [ ] **rescue-02** | `prd-phases/rescue/prd-rescue-02-verify.md` | Green gate: register -> login -> /me -> household in real browser; type-check passes | status: pending | requires: rescue-01 |
+- [x] **rescue-02** | `prd-phases/rescue/prd-rescue-02-verify.md` | Green gate: register -> login -> /me -> household in real browser; type-check passes | status: complete | requires: rescue-01 |
 
 ### Phase R3: Service Layer Migration (Quality)
 
@@ -168,6 +168,6 @@ Discovered Task in the PRD's Discovered Tasks section, add a guardrail note to
 | Metric            | Count |
 | ----------------- | ----- |
 | Total rescue PRDs | 5     |
-| Complete          | 2     |
-| Pending           | 3     |
+| Complete          | 3     |
+| Pending           | 2     |
 | Blocked           | 0     |

@@ -8,6 +8,7 @@ export interface SessionUser {
   role: string;
   email?: string;
   name?: string;
+  householdId?: string;
 }
 
 // AUTH-001 fix: Previously checked token.user which Auth.js never sets.
