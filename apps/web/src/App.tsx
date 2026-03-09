@@ -1,70 +1,175 @@
-import { useEffect, useState } from "react";
-import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
+import { AppShell } from "./components/AppShell";
+import { AuthGuard } from "./components/AuthGuard";
 import { InstallPrompt } from "./components/InstallPrompt";
-import { OfflineBanner } from "./components/OfflineBanner";
-import FridgeClearance from "./routes/FridgeClearance";
-import FulfillmentPage from "./routes/FulfillmentPage";
-import Home from "./routes/Home";
-import Lists from "./routes/Lists";
+
+// Lazy imports for faster initial load
+import Login from "./routes/Login";
+import SignUp from "./routes/SignUp";
 import Onboarding from "./routes/Onboarding";
+
+// Core pages (authenticated)
 import Planning from "./routes/Planning";
+import Recipes, { RecipeDetail, CookingView } from "./routes/Recipes";
+import Pantry from "./routes/Pantry";
+import FulfillmentPage from "./routes/FulfillmentPage";
+import Lists from "./routes/Lists";
+import HouseholdOps from "./routes/HouseholdOps";
+
+// Additional feature pages
+import BatchPrep from "./routes/BatchPrep";
+import EventsPage from "./routes/Events";
+import FridgeClearance from "./routes/FridgeClearance";
 import Potluck from "./routes/Potluck";
 import PotluckDetail from "./routes/PotluckDetail";
-import BatchPrep from "./routes/BatchPrep";
-import HouseholdOps from "./routes/HouseholdOps";
-import Recipes, { CookingView, RecipeDetail } from "./routes/Recipes";
 
-function App() {
-  const [online, setOnline] = useState(navigator.onLine);
-
-  useEffect(() => {
-    const onOnline = () => setOnline(true);
-    const onOffline = () => setOnline(false);
-    window.addEventListener("online", onOnline);
-    window.addEventListener("offline", onOffline);
-    return () => {
-      window.removeEventListener("online", onOnline);
-      window.removeEventListener("offline", onOffline);
-    };
-  }, []);
-
+/**
+ * Authenticated route wrapper: combines AuthGuard + AppShell.
+ * Route definitions use this for all protected pages.
+ */
+function Protected({ children }: { children: React.ReactNode }) {
   return (
-    <BrowserRouter>
-      <InstallPrompt />
-      {!online && <OfflineBanner />}
-      <header className="p-4 bg-gray-100">
-        <nav className="space-x-4">
-          <Link to="/">Home</Link>
-          <Link to="/onboarding">Onboarding</Link>
-          <Link to="/recipes">Recipes</Link>
-          <Link to="/lists">Lists</Link>
-          <Link to="/planning">Planning</Link>
-          <Link to="/fridge-clearance">Fridge Clearance</Link>
-          <Link to="/potluck">Potluck</Link>
-          <Link to="/fulfillment">Fulfillment</Link>
-          <Link to="/batch-prep">Batch Prep</Link>
-          <Link to="/household-ops">Household Ops</Link>
-        </nav>
-      </header>
-      <main className="p-4">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/recipes" element={<Recipes />} />
-          <Route path="/recipes/:id" element={<RecipeDetail />} />
-          <Route path="/recipes/:id/cook" element={<CookingView />} />
-          <Route path="/lists" element={<Lists />} />
-          <Route path="/planning" element={<Planning />} />
-          <Route path="/fridge-clearance" element={<FridgeClearance />} />
-          <Route path="/potluck" element={<Potluck />} />
-          <Route path="/potluck/:id" element={<PotluckDetail />} />
-          <Route path="/fulfillment" element={<FulfillmentPage />} />
-          <Route path="/batch-prep" element={<BatchPrep />} />
-          <Route path="/household-ops" element={<HouseholdOps />} />
-        </Routes>
-      </main>
-    </BrowserRouter>
+    <AuthGuard>
+      <AppShell>{children}</AppShell>
+    </AuthGuard>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <>
+      {/* A2HS prompt (listens for beforeinstallprompt globally) */}
+      <InstallPrompt />
+
+      <Routes>
+        {/* Root redirect */}
+        <Route path="/" element={<Navigate to="/planning" replace />} />
+
+        {/* Public / unauthenticated routes */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<SignUp />} />
+
+        {/* Onboarding: authed but pre-household; no AppShell (full-screen flow) */}
+        <Route
+          path="/onboarding"
+          element={
+            <AuthGuard>
+              <Onboarding />
+            </AuthGuard>
+          }
+        />
+
+        {/* Protected pages with AppShell */}
+        <Route
+          path="/planning"
+          element={
+            <Protected>
+              <Planning />
+            </Protected>
+          }
+        />
+        <Route
+          path="/recipes"
+          element={
+            <Protected>
+              <Recipes />
+            </Protected>
+          }
+        />
+        <Route
+          path="/recipes/:id"
+          element={
+            <Protected>
+              <RecipeDetail />
+            </Protected>
+          }
+        />
+        <Route
+          path="/recipes/:id/cook"
+          element={
+            <Protected>
+              <CookingView />
+            </Protected>
+          }
+        />
+        <Route
+          path="/pantry"
+          element={
+            <Protected>
+              <Pantry />
+            </Protected>
+          }
+        />
+        <Route
+          path="/household"
+          element={
+            <Protected>
+              <HouseholdOps />
+            </Protected>
+          }
+        />
+        <Route
+          path="/lists"
+          element={
+            <Protected>
+              <Lists />
+            </Protected>
+          }
+        />
+        <Route
+          path="/fulfillment"
+          element={
+            <Protected>
+              <FulfillmentPage />
+            </Protected>
+          }
+        />
+
+        {/* Additional feature routes */}
+        <Route
+          path="/batch-prep"
+          element={
+            <Protected>
+              <BatchPrep />
+            </Protected>
+          }
+        />
+        <Route
+          path="/events"
+          element={
+            <Protected>
+              <EventsPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/fridge-clearance"
+          element={
+            <Protected>
+              <FridgeClearance />
+            </Protected>
+          }
+        />
+        <Route
+          path="/potluck"
+          element={
+            <Protected>
+              <Potluck />
+            </Protected>
+          }
+        />
+        <Route
+          path="/potluck/:id"
+          element={
+            <Protected>
+              <PotluckDetail />
+            </Protected>
+          }
+        />
+
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/planning" replace />} />
+      </Routes>
+    </>
+  );
+}

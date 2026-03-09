@@ -343,7 +343,7 @@ Use the `mcp__claude-in-chrome__*` tools for browser verification after each maj
 
 ## Phase 3: App Shell
 
-### Task 6: App shell and routing `[BD:STG-266]`
+### Task 6: App shell and routing `[BD:stg-yq7]` [x]
 
 - **Type**: feature
 - **Do**: Rewrite `apps/web/src/App.tsx` with the production routing configuration:
