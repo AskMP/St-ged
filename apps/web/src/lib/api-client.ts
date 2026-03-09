@@ -84,7 +84,17 @@ export const apiClient = {
   },
   households: {
     create(name: string) {
-      return request<{ id: string; name: string }>("/api/households", {
+      return request<{
+        id: string;
+        inviteCode: string;
+        user: {
+          id: string;
+          email: string | null;
+          name: string | null;
+          householdId: string | null;
+          role: string;
+        } | null;
+      }>("/api/households", {
         method: "POST",
         body: JSON.stringify({ name }),
       });

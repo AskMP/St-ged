@@ -31,30 +31,45 @@ const householdsRouter = new Hono()
     }
     const result = await createHousehold(body.name, user.id);
 
+    // Always fetch the updated profile so we can include user in response
+    // and re-issue JWT. The profile read reflects the householdId just set.
+    const [profile] = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        displayName: users.displayName,
+        householdId: users.householdId,
+      })
+      .from(users)
+      .where(eq(users.id, user.id))
+      .limit(1);
+
     // Re-issue JWT so client token reflects the new householdId.
-    // Skip in test environment where NEXTAUTH_SECRET may not be set.
-    if (process.env.NODE_ENV !== "test") {
-      const [profile] = await db
-        .select({
-          id: users.id,
-          email: users.email,
-          displayName: users.displayName,
-          householdId: users.householdId,
-        })
-        .from(users)
-        .where(eq(users.id, user.id))
-        .limit(1);
-      if (profile) {
-        await issueSessionToken(c, {
-          id: profile.id,
-          email: profile.email,
-          name: profile.displayName,
-          householdId: profile.householdId,
-        });
-      }
+    if (profile && process.env.NODE_ENV !== "test") {
+      await issueSessionToken(c, {
+        id: profile.id,
+        email: profile.email,
+        name: profile.displayName,
+        householdId: profile.householdId,
+      });
     }
 
-    return c.json(result, 201);
+    return c.json(
+      {
+        id: result.id,
+        inviteCode: result.inviteCode,
+        user: profile
+          ? {
+              id: profile.id,
+              email: profile.email,
+              name: profile.displayName,
+              householdId: profile.householdId,
+              role: "owner",
+            }
+          : null,
+      },
+      201,
+    );
   })
   .get("/:id", async (c) => {
     const id = c.req.param("id");

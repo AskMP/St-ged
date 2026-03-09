@@ -182,8 +182,18 @@ function HouseholdStep({ onNext }: { onNext: (householdId: string) => void }) {
     setLoading(true);
     try {
       const hh = await apiClient.households.create(name);
-      // Refresh auth store with new householdId
-      if (user) {
+      // Update AuthStore with returned user (includes new householdId from DB)
+      if (hh.user) {
+        setUser({
+          id: hh.user.id,
+          email: hh.user.email ?? "",
+          name: hh.user.name ?? "",
+          householdId: hh.user.householdId,
+          role: hh.user.role,
+          skillLevel: user?.skillLevel ?? "beginner",
+        });
+      } else if (user) {
+        // Fallback: update with locally known householdId
         setUser({ ...user, householdId: hh.id });
       }
       if (mode === "group") {
