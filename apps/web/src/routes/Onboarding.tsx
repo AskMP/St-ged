@@ -1,438 +1,553 @@
-import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { apiClient } from '../lib/api-client'
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { apiClient } from "@/lib/api-client";
+import { useAuthStore } from "@/lib/auth-store";
 import {
   isInstallAvailable,
-  onInstallAvailable,
   promptInstall,
   requestPersistentStorage,
-} from '../lib/install'
-import {
-  type DietaryFlag,
-  type SkillLevel,
-  useOnboardingStore,
-} from '../lib/onboarding-store'
+} from "@/lib/install";
 
-// ---- helpers ----
+// ---- Types ----
 
-function StepIndicator({ current, total }: { current: number; total: number }) {
+type SkillLevel = "beginner" | "home_cook" | "confident";
+type DietaryFlag =
+  | "vegan"
+  | "vegetarian"
+  | "gluten-free"
+  | "dairy-free"
+  | "nut-free"
+  | "halal"
+  | "kosher"
+  | "low-carb";
+
+const DIETARY_OPTIONS: { value: DietaryFlag; label: string }[] = [
+  { value: "vegan", label: "Vegan" },
+  { value: "vegetarian", label: "Vegetarian" },
+  { value: "gluten-free", label: "Gluten-free" },
+  { value: "dairy-free", label: "Dairy-free" },
+  { value: "nut-free", label: "Nut-free" },
+  { value: "halal", label: "Halal" },
+  { value: "kosher", label: "Kosher" },
+  { value: "low-carb", label: "Low-carb" },
+];
+
+const PANTRY_STAPLES = [
+  "Olive oil",
+  "Salt",
+  "Black pepper",
+  "Garlic",
+  "Onions",
+  "Butter",
+  "Eggs",
+  "All-purpose flour",
+  "Sugar",
+  "Soy sauce",
+  "Chicken or vegetable stock",
+  "Canned tomatoes",
+  "Pasta",
+  "Rice",
+  "Dried lentils or beans",
+  "Chili flakes",
+  "Cumin",
+  "Paprika",
+  "Bay leaves",
+  "Dijon mustard",
+  "Apple cider vinegar",
+  "Honey",
+  "Oats",
+  "Canned coconut milk",
+];
+
+// ---- Helpers ----
+
+function StepIndicator({ step, total }: { step: number; total: number }) {
   return (
-    <div className="flex gap-1 mb-6" aria-label={`Step ${current} of ${total}`}>
+    <div className="flex gap-1.5 mb-6" aria-label={`Step ${step} of ${total}`}>
       {Array.from({ length: total }).map((_, i) => (
         <div
           key={i}
-          className={`h-1 flex-1 rounded-full ${i < current ? 'bg-green-500' : 'bg-gray-200'}`}
+          className={`h-1.5 flex-1 rounded-full transition-colors ${
+            i < step ? "bg-green-500" : "bg-stone-200"
+          }`}
         />
       ))}
     </div>
-  )
+  );
 }
 
 function Card({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-stone-50 flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-sm p-8">{children}</div>
+    <div className="min-h-screen bg-stone-50 flex items-center justify-center px-4 py-8">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-stone-200 p-8">
+        {children}
+      </div>
     </div>
-  )
+  );
 }
 
-// ---- Steps ----
+// ---- Step 1: Skill Level (Jordan's Confidence Rule) ----
 
-function WelcomeStep() {
-  const { setStep, setUser, setDisplayName } = useOnboardingStore()
-  const [mode, setMode] = useState<'signup' | 'signin' | null>(null)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [name, setName] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+function SkillStep({ onNext }: { onNext: (skill: SkillLevel) => void }) {
+  const [selected, setSelected] = useState<SkillLevel | null>(null);
 
-  const handleSignup = async () => {
-    setError('')
-    setLoading(true)
-    try {
-      await apiClient.auth.signup(email, password, name)
-      const me = await apiClient.auth.me()
-      setDisplayName(me.name)
-      setUser(me.id, null)
-      setStep('skill')
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Sign-up failed')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleGuest = async () => {
-    setError('')
-    setLoading(true)
-    try {
-      const { userId } = await apiClient.auth.guest()
-      setDisplayName('Guest')
-      setUser(userId, null)
-      setStep('skill')
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Could not start guest session')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <Card>
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-stone-900">Stàged</h1>
-        <p className="mt-2 text-stone-500">Cook together, shop smarter.</p>
-      </div>
-
-      {!mode && (
-        <div className="space-y-3">
-          <button
-            onClick={() => setMode('signup')}
-            className="w-full py-3 rounded-xl bg-green-600 text-white font-medium hover:bg-green-700"
-          >
-            Create account
-          </button>
-          <button
-            onClick={handleGuest}
-            disabled={loading}
-            className="w-full py-3 rounded-xl border border-stone-200 text-stone-700 font-medium hover:bg-stone-50"
-          >
-            {loading ? 'Starting...' : 'Continue as guest'}
-          </button>
-        </div>
-      )}
-
-      {mode === 'signup' && (
-        <div className="space-y-4">
-          <input
-            placeholder="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full border border-stone-200 rounded-lg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
-          />
-          <input
-            placeholder="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full border border-stone-200 rounded-lg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
-          />
-          <input
-            placeholder="Password (8+ chars)"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full border border-stone-200 rounded-lg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
-          />
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-          <button
-            onClick={handleSignup}
-            disabled={loading}
-            className="w-full py-3 rounded-xl bg-green-600 text-white font-medium hover:bg-green-700 disabled:opacity-50"
-          >
-            {loading ? 'Creating account...' : 'Sign up'}
-          </button>
-          <button onClick={() => setMode(null)} className="w-full text-sm text-stone-400">
-            Back
-          </button>
-        </div>
-      )}
-    </Card>
-  )
-}
-
-function SkillStep() {
-  const { skillLevel, setSkillLevel, setStep } = useOnboardingStore()
-
-  const options: { value: SkillLevel; label: string; desc: string }[] = [
-    { value: 'beginner', label: 'Beginner', desc: 'I follow recipes step by step' },
-    { value: 'intermediate', label: 'Intermediate', desc: 'I can improvise a bit' },
-    { value: 'advanced', label: 'Advanced', desc: 'I cook from memory' },
-  ]
-
-  return (
-    <Card>
-      <StepIndicator current={1} total={5} />
-      <h2 className="text-2xl font-bold text-stone-900 mb-2">Your skill level</h2>
-      <p className="text-stone-500 text-sm mb-6">We'll tailor recipe guidance for you.</p>
-      <div className="space-y-3">
-        {options.map((o) => (
-          <button
-            key={o.value}
-            onClick={() => setSkillLevel(o.value)}
-            className={`w-full text-left px-4 py-4 rounded-xl border-2 transition-colors ${
-              skillLevel === o.value
-                ? 'border-green-500 bg-green-50'
-                : 'border-stone-200 hover:border-stone-300'
-            }`}
-          >
-            <div className="font-medium text-stone-900">{o.label}</div>
-            <div className="text-sm text-stone-500">{o.desc}</div>
-          </button>
-        ))}
-      </div>
-      <button
-        onClick={() => setStep('household')}
-        disabled={!skillLevel}
-        className="mt-6 w-full py-3 rounded-xl bg-green-600 text-white font-medium hover:bg-green-700 disabled:opacity-40"
-      >
-        Next
-      </button>
-    </Card>
-  )
-}
-
-function HouseholdStep() {
-  const { householdSize, setHouseholdSize, setStep } = useOnboardingStore()
-
-  const sizes = [1, 2, 3, 4, 5]
-
-  return (
-    <Card>
-      <StepIndicator current={2} total={5} />
-      <h2 className="text-2xl font-bold text-stone-900 mb-2">Household size</h2>
-      <p className="text-stone-500 text-sm mb-6">We'll scale recipes and portions for you.</p>
-      <div className="flex gap-3 flex-wrap">
-        {sizes.map((n) => (
-          <button
-            key={n}
-            onClick={() => setHouseholdSize(n)}
-            className={`w-16 h-16 rounded-xl border-2 font-bold text-lg transition-colors ${
-              householdSize === n
-                ? 'border-green-500 bg-green-50 text-green-700'
-                : 'border-stone-200 text-stone-700 hover:border-stone-300'
-            }`}
-          >
-            {n === 5 ? '5+' : n}
-          </button>
-        ))}
-      </div>
-      <div className="flex gap-3 mt-6">
-        <button
-          onClick={() => setStep('skill')}
-          className="flex-1 py-3 rounded-xl border border-stone-200 text-stone-700 font-medium"
-        >
-          Back
-        </button>
-        <button
-          onClick={() => setStep('dietary')}
-          disabled={!householdSize}
-          className="flex-1 py-3 rounded-xl bg-green-600 text-white font-medium hover:bg-green-700 disabled:opacity-40"
-        >
-          Next
-        </button>
-      </div>
-    </Card>
-  )
-}
-
-function DietaryStep() {
-  const { dietary, toggleDietary, setStep } = useOnboardingStore()
-
-  const flags: { value: DietaryFlag; label: string }[] = [
-    { value: 'vegan', label: 'Vegan' },
-    { value: 'vegetarian', label: 'Vegetarian' },
-    { value: 'gluten-free', label: 'Gluten-free' },
-    { value: 'dairy-free', label: 'Dairy-free' },
-    { value: 'nut-free', label: 'Nut-free' },
-  ]
-
-  return (
-    <Card>
-      <StepIndicator current={3} total={5} />
-      <h2 className="text-2xl font-bold text-stone-900 mb-2">Dietary preferences</h2>
-      <p className="text-stone-500 text-sm mb-6">Select all that apply. Skip to continue.</p>
-      <div className="flex flex-wrap gap-2">
-        {flags.map((f) => (
-          <button
-            key={f.value}
-            onClick={() => toggleDietary(f.value)}
-            className={`px-4 py-2 rounded-full border-2 text-sm font-medium transition-colors ${
-              dietary.includes(f.value)
-                ? 'border-green-500 bg-green-50 text-green-700'
-                : 'border-stone-200 text-stone-600 hover:border-stone-300'
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-      <div className="flex gap-3 mt-6">
-        <button
-          onClick={() => setStep('household')}
-          className="flex-1 py-3 rounded-xl border border-stone-200 text-stone-700 font-medium"
-        >
-          Back
-        </button>
-        <button
-          onClick={() => setStep('pantry')}
-          className="flex-1 py-3 rounded-xl bg-green-600 text-white font-medium hover:bg-green-700"
-        >
-          Next
-        </button>
-      </div>
-    </Card>
-  )
-}
-
-function PantryStep() {
-  const { pantryTemplate, setPantryTemplate, householdId, setStep } = useOnboardingStore()
-  const [applying, setApplying] = useState(false)
-  const [error, setError] = useState('')
-
-  const templates = [
+  const options: {
+    value: SkillLevel;
+    emoji: string;
+    label: string;
+    desc: string;
+  }[] = [
     {
-      value: 'basic',
-      label: 'Essential kitchen',
-      desc: 'Salt, flour, sugar — the basics everyone needs.',
+      value: "beginner",
+      emoji: "🌱",
+      label: "Beginner",
+      desc: "I follow recipes carefully. Simple dishes only.",
     },
     {
-      value: 'vegan',
-      label: 'Plant-based',
-      desc: 'Oils, beans, and staples for plant-based cooking.',
+      value: "home_cook",
+      emoji: "🍳",
+      label: "Home Cook",
+      desc: "I improvise sometimes. Most recipes work for me.",
     },
-  ]
-
-  const handleNext = async () => {
-    if (pantryTemplate && householdId) {
-      setApplying(true)
-      try {
-        await apiClient.pantry.applyTemplate(householdId, pantryTemplate)
-      } catch {
-        setError('Could not save pantry — you can update it later.')
-      } finally {
-        setApplying(false)
-      }
-    }
-    setStep('install')
-  }
+    {
+      value: "confident",
+      emoji: "👨‍🍳",
+      label: "Confident Cook",
+      desc: "I adapt recipes and handle complex techniques.",
+    },
+  ];
 
   return (
     <Card>
-      <StepIndicator current={4} total={5} />
-      <h2 className="text-2xl font-bold text-stone-900 mb-2">Starter pantry</h2>
+      <StepIndicator step={1} total={4} />
+      <h2 className="text-2xl font-bold text-stone-900 mb-1">
+        How comfortable are you in the kitchen?
+      </h2>
       <p className="text-stone-500 text-sm mb-6">
-        Stock your virtual pantry so recipes know what you have. Skip to set it up later.
+        We&apos;ll show recipes that match your skill level. You can always
+        change this later.
       </p>
-      <div className="space-y-3">
-        {templates.map((t) => (
+
+      <div className="space-y-3" data-testid="skill-step">
+        {options.map((opt) => (
           <button
-            key={t.value}
-            onClick={() => setPantryTemplate(pantryTemplate === t.value ? null : t.value)}
+            key={opt.value}
+            onClick={() => setSelected(opt.value)}
             className={`w-full text-left px-4 py-4 rounded-xl border-2 transition-colors ${
-              pantryTemplate === t.value
-                ? 'border-green-500 bg-green-50'
-                : 'border-stone-200 hover:border-stone-300'
+              selected === opt.value
+                ? "border-green-500 bg-green-50"
+                : "border-stone-200 hover:border-stone-300"
             }`}
+            data-testid={`skill-${opt.value}`}
           >
-            <div className="font-medium text-stone-900">{t.label}</div>
-            <div className="text-sm text-stone-500">{t.desc}</div>
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">{opt.emoji}</span>
+              <div>
+                <div className="font-semibold text-stone-900">{opt.label}</div>
+                <div className="text-sm text-stone-500">{opt.desc}</div>
+              </div>
+              {selected === opt.value && (
+                <span className="ml-auto text-green-500 text-lg">✓</span>
+              )}
+            </div>
           </button>
         ))}
       </div>
-      {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-      <div className="flex gap-3 mt-6">
-        <button
-          onClick={() => setStep('dietary')}
-          className="flex-1 py-3 rounded-xl border border-stone-200 text-stone-700 font-medium"
-        >
-          Back
-        </button>
-        <button
-          onClick={handleNext}
-          disabled={applying}
-          className="flex-1 py-3 rounded-xl bg-green-600 text-white font-medium hover:bg-green-700 disabled:opacity-50"
-        >
-          {applying ? 'Saving...' : 'Next'}
-        </button>
-      </div>
+
+      <button
+        onClick={() => selected && onNext(selected)}
+        disabled={!selected}
+        className="w-full mt-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-stone-200 disabled:text-stone-400 text-white font-semibold rounded-lg transition-colors"
+        data-testid="skill-continue"
+      >
+        Continue
+      </button>
     </Card>
-  )
+  );
 }
 
-function InstallStep() {
-  const { setStep } = useOnboardingStore()
-  const [installable, setInstallable] = useState(isInstallAvailable())
-  const [installed, setInstalled] = useState(false)
-  const [storageGranted, setStorageGranted] = useState<boolean | null>(null)
+// ---- Step 2: Household Setup (Darius's Rule) ----
 
-  useEffect(() => {
-    const unsub = onInstallAvailable(() => setInstallable(true))
-    requestPersistentStorage().then((granted) => setStorageGranted(granted))
-    return unsub
-  }, [])
+function HouseholdStep({ onNext }: { onNext: (householdId: string) => void }) {
+  const user = useAuthStore((s) => s.user);
+  const setUser = useAuthStore((s) => s.setUser);
+  const [mode, setMode] = useState<"solo" | "group" | null>(null);
+  const [householdName, setHouseholdName] = useState("");
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleInstall = async () => {
-    const result = await promptInstall()
-    if (result !== 'unavailable') setInstalled(true)
+  const createAndProceed = async (name: string) => {
+    setError(null);
+    setLoading(true);
+    try {
+      const hh = await apiClient.households.create(name);
+      // Refresh auth store with new householdId
+      if (user) {
+        setUser({ ...user, householdId: hh.id });
+      }
+      if (mode === "group") {
+        const link = `${window.location.origin}/join/${hh.id}`;
+        setInviteLink(link);
+      } else {
+        onNext(hh.id);
+      }
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : "Could not create household.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (inviteLink) {
+    const householdId = user?.householdId ?? "";
+    return (
+      <Card>
+        <StepIndicator step={2} total={4} />
+        <h2 className="text-2xl font-bold text-stone-900 mb-2">
+          Invite your household
+        </h2>
+        <p className="text-stone-500 text-sm mb-4">
+          Share this link with the people you cook with.
+        </p>
+        <div className="bg-stone-100 rounded-lg px-4 py-3 text-sm text-stone-700 font-mono break-all mb-6">
+          {inviteLink}
+        </div>
+        <button
+          onClick={() => navigator.clipboard.writeText(inviteLink)}
+          className="w-full py-2.5 border border-stone-300 rounded-lg text-stone-700 text-sm hover:bg-stone-50 mb-4"
+        >
+          Copy link
+        </button>
+        <button
+          onClick={() => onNext(householdId)}
+          className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors"
+          data-testid="household-continue"
+        >
+          Continue
+        </button>
+      </Card>
+    );
   }
 
   return (
     <Card>
-      <StepIndicator current={5} total={5} />
-      <h2 className="text-2xl font-bold text-stone-900 mb-2">Add to Home Screen</h2>
-      <p className="text-stone-500 text-sm mb-4">
-        Install Stàged to keep your recipes available offline -- even without signal. iOS clears
-        browser cache after 7 days; installing prevents this.
+      <StepIndicator step={2} total={4} />
+      <h2 className="text-2xl font-bold text-stone-900 mb-1">
+        Is anyone else eating with you?
+      </h2>
+      <p className="text-stone-500 text-sm mb-6">
+        Set up a shared household so everyone stays on the same meal plan.
       </p>
 
-      {storageGranted === false && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 text-sm text-amber-800">
-          Your browser did not grant persistent storage. Recipes may be cleared if you run low on
-          space. Installing the app helps.
-        </div>
-      )}
-
-      {installable && !installed && (
+      <div className="space-y-3" data-testid="household-step">
         <button
-          onClick={handleInstall}
-          className="w-full py-3 rounded-xl bg-green-600 text-white font-medium hover:bg-green-700 mb-3"
+          onClick={() => setMode("solo")}
+          className={`w-full text-left px-4 py-4 rounded-xl border-2 transition-colors ${
+            mode === "solo"
+              ? "border-green-500 bg-green-50"
+              : "border-stone-200 hover:border-stone-300"
+          }`}
+          data-testid="household-solo"
         >
-          Add to Home Screen
+          <div className="font-semibold text-stone-900">Just me</div>
+          <div className="text-sm text-stone-500">
+            Solo household. Fast setup.
+          </div>
         </button>
-      )}
 
-      {installed && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4 text-sm text-green-800 font-medium">
-          Installed! Your recipes will be available offline.
+        <button
+          onClick={() => setMode("group")}
+          className={`w-full text-left px-4 py-4 rounded-xl border-2 transition-colors ${
+            mode === "group"
+              ? "border-green-500 bg-green-50"
+              : "border-stone-200 hover:border-stone-300"
+          }`}
+          data-testid="household-group"
+        >
+          <div className="font-semibold text-stone-900">I cook for others</div>
+          <div className="text-sm text-stone-500">
+            Create a shared household. Share an invite link.
+          </div>
+        </button>
+      </div>
+
+      {mode === "group" && (
+        <div className="mt-4">
+          <label
+            htmlFor="householdName"
+            className="block text-sm font-medium text-stone-700 mb-1"
+          >
+            Household name
+          </label>
+          <input
+            id="householdName"
+            type="text"
+            value={householdName}
+            onChange={(e) => setHouseholdName(e.target.value)}
+            placeholder="e.g. The Park Family"
+            className="w-full px-3 py-2.5 border border-stone-300 rounded-lg text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
         </div>
       )}
+
+      {error && <p className="text-red-600 text-sm mt-3">{error}</p>}
 
       <button
-        onClick={() => setStep('done')}
-        className="w-full py-3 rounded-xl border border-stone-200 text-stone-600 font-medium hover:bg-stone-50"
+        onClick={() => {
+          if (!mode) return;
+          const name =
+            mode === "solo"
+              ? `${user?.name ?? "My"}'s Household`
+              : householdName.trim() || "My Household";
+          createAndProceed(name);
+        }}
+        disabled={
+          !mode || loading || (mode === "group" && !householdName.trim())
+        }
+        className="w-full mt-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-stone-200 disabled:text-stone-400 text-white font-semibold rounded-lg transition-colors"
+        data-testid="household-continue"
       >
-        {installed ? 'Continue' : 'Skip for now'}
+        {loading ? "Setting up..." : "Continue"}
       </button>
     </Card>
-  )
+  );
 }
 
-// ---- Root Component ----
+// ---- Step 3: Dietary Profile (Maya's Zero-Waste Signal) ----
+
+function DietaryStep({ onNext }: { onNext: (dietary: DietaryFlag[]) => void }) {
+  const [selected, setSelected] = useState<DietaryFlag[]>([]);
+
+  const toggle = (flag: DietaryFlag) => {
+    setSelected((prev) =>
+      prev.includes(flag) ? prev.filter((f) => f !== flag) : [...prev, flag],
+    );
+  };
+
+  return (
+    <Card>
+      <StepIndicator step={3} total={4} />
+      <h2 className="text-2xl font-bold text-stone-900 mb-1">
+        Any dietary needs?
+      </h2>
+      <p className="text-stone-500 text-sm mb-6">
+        We&apos;ll filter recipes to match. You can always update this.
+      </p>
+
+      <div className="flex flex-wrap gap-2" data-testid="dietary-step">
+        {DIETARY_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => toggle(opt.value)}
+            className={`px-4 py-2 rounded-full border text-sm font-medium transition-colors ${
+              selected.includes(opt.value)
+                ? "border-green-500 bg-green-50 text-green-700"
+                : "border-stone-200 text-stone-600 hover:border-stone-300"
+            }`}
+            data-testid={`dietary-${opt.value}`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-6 space-y-2">
+        <button
+          onClick={() => onNext(selected)}
+          className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors"
+          data-testid="dietary-continue"
+        >
+          Continue
+        </button>
+        <button
+          onClick={() => onNext([])}
+          className="w-full py-2 text-sm text-stone-400 hover:text-stone-600 transition-colors"
+          data-testid="dietary-skip"
+        >
+          Skip for now
+        </button>
+      </div>
+    </Card>
+  );
+}
+
+// ---- Step 4: Starter Pantry + A2HS (Sam's Fridge Rule) ----
+
+function PantryStep({
+  householdId,
+  onDone,
+}: {
+  householdId: string;
+  onDone: () => void;
+}) {
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(false);
+  const [showA2HS, setShowA2HS] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const toggle = (item: string) => {
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(item)) next.delete(item);
+      else next.add(item);
+      return next;
+    });
+  };
+
+  const handleSubmit = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      if (checked.size > 0 && householdId) {
+        await apiClient.pantry.applyTemplate(householdId, "custom");
+      }
+    } catch (err: unknown) {
+      // Pantry save is best-effort; don't block onboarding completion
+      console.warn("Pantry save failed:", err);
+    } finally {
+      setLoading(false);
+    }
+
+    // Trigger A2HS prompt
+    if (isInstallAvailable()) {
+      setShowA2HS(true);
+    } else {
+      onDone();
+    }
+  };
+
+  if (showA2HS) {
+    return (
+      <Card>
+        <div className="text-center">
+          <div className="text-5xl mb-4">📱</div>
+          <h2 className="text-2xl font-bold text-stone-900 mb-2">
+            Add Stàged to your Home Screen
+          </h2>
+          <p className="text-stone-500 text-sm mb-8">
+            Keep your recipes available offline -- even without signal. iOS
+            removes browser data after 7 days without installation.
+          </p>
+          <button
+            onClick={async () => {
+              await promptInstall();
+              await requestPersistentStorage();
+              onDone();
+            }}
+            className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors mb-3"
+            data-testid="a2hs-add"
+          >
+            Add to Home Screen
+          </button>
+          <button
+            onClick={onDone}
+            className="w-full py-2 text-sm text-stone-400 hover:text-stone-600 transition-colors"
+            data-testid="a2hs-skip"
+          >
+            Maybe later
+          </button>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <StepIndicator step={4} total={4} />
+      <h2 className="text-2xl font-bold text-stone-900 mb-1">
+        Let&apos;s stock your pantry
+      </h2>
+      <p className="text-stone-500 text-sm mb-6">
+        Check what you have. We&apos;ll use this to find recipes you can make
+        today.
+      </p>
+
+      <div
+        className="space-y-2 max-h-72 overflow-y-auto pr-1"
+        data-testid="pantry-step"
+      >
+        {PANTRY_STAPLES.map((item) => (
+          <label
+            key={item}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-stone-50 cursor-pointer"
+          >
+            <input
+              type="checkbox"
+              checked={checked.has(item)}
+              onChange={() => toggle(item)}
+              className="w-4 h-4 rounded border-stone-300 text-green-600 focus:ring-green-500"
+              data-testid={`pantry-item-${item.toLowerCase().replace(/\s+/g, "-")}`}
+            />
+            <span className="text-stone-700 text-sm">{item}</span>
+          </label>
+        ))}
+      </div>
+
+      {error && <p className="text-red-600 text-sm mt-3">{error}</p>}
+
+      <button
+        onClick={handleSubmit}
+        disabled={loading}
+        className="w-full mt-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-semibold rounded-lg transition-colors"
+        data-testid="pantry-continue"
+      >
+        {loading
+          ? "Saving..."
+          : checked.size > 0
+            ? `Add ${checked.size} item${checked.size > 1 ? "s" : ""} to my pantry`
+            : "Skip for now"}
+      </button>
+    </Card>
+  );
+}
+
+// ---- Main Onboarding Orchestrator ----
+
+type Step = "skill" | "household" | "dietary" | "pantry";
 
 export default function Onboarding() {
-  const { step, setStep } = useOnboardingStore()
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
 
-  // If onboarding is done, redirect to recipes
-  useEffect(() => {
-    if (step === 'done') {
-      navigate('/recipes')
-    }
-  }, [step, navigate])
+  const [step, setStep] = useState<Step>("skill");
+  const [skill, setSkill] = useState<SkillLevel | null>(null);
+  const [householdId, setHouseholdId] = useState<string>(
+    user?.householdId ?? "",
+  );
+  const [dietary, setDietary] = useState<DietaryFlag[]>([]);
 
-  // Allow skipping back to welcome if userId not yet set
-  if (step === 'done') return null
+  const handleSkill = (s: SkillLevel) => {
+    setSkill(s);
+    setStep("household");
+  };
 
-  return (
-    <div data-testid="onboarding">
-      {step === 'welcome' && <WelcomeStep />}
-      {step === 'skill' && <SkillStep />}
-      {step === 'household' && <HouseholdStep />}
-      {step === 'dietary' && <DietaryStep />}
-      {step === 'pantry' && <PantryStep />}
-      {step === 'install' && <InstallStep />}
-    </div>
-  )
+  const handleHousehold = (hId: string) => {
+    setHouseholdId(hId);
+    setStep("dietary");
+  };
+
+  const handleDietary = (flags: DietaryFlag[]) => {
+    setDietary(flags);
+    setStep("pantry");
+  };
+
+  const handleDone = () => {
+    void skill; // captured for future PATCH /api/users/me
+    void dietary;
+    navigate("/planning");
+  };
+
+  if (step === "skill") {
+    return <SkillStep onNext={handleSkill} />;
+  }
+  if (step === "household") {
+    return <HouseholdStep onNext={handleHousehold} />;
+  }
+  if (step === "dietary") {
+    return <DietaryStep onNext={handleDietary} />;
+  }
+  return <PantryStep householdId={householdId} onDone={handleDone} />;
 }

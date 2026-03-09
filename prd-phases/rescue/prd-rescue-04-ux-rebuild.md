@@ -218,7 +218,7 @@ Use the `mcp__claude-in-chrome__*` tools for browser verification after each maj
 
 ## Phase 1: Authentication UI
 
-### Task 3: Login page rebuild `[BD:STG-263]`
+### Task 3: Login page rebuild `[BD:stg-eax]` [x]
 
 - **Type**: feature
 - **Do**: Rewrite `apps/web/src/routes/Login.tsx` from scratch. Design requirements:
@@ -252,7 +252,7 @@ Use the `mcp__claude-in-chrome__*` tools for browser verification after each maj
 
 ---
 
-### Task 4: Signup page rebuild `[BD:STG-264]`
+### Task 4: Signup page rebuild `[BD:stg-cxg]` [x]
 
 - **Type**: feature
 - **Do**: Rewrite or create `apps/web/src/routes/SignUp.tsx`. Design requirements:
@@ -281,7 +281,7 @@ Use the `mcp__claude-in-chrome__*` tools for browser verification after each maj
 
 ## Phase 2: Onboarding Flow
 
-### Task 5: Onboarding flow rebuild `[BD:STG-265]`
+### Task 5: Onboarding flow rebuild `[BD:stg-3wb]` [x]
 
 - **Type**: feature
 - **Do**: Rewrite `apps/web/src/routes/Onboarding.tsx` as a multi-step flow.
