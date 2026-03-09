@@ -1,109 +1,195 @@
-import { test, expect } from '@playwright/test'
+/**
+ * Jordan Flow -- First Apartment Cook
+ *
+ * Tests the signup -> onboarding -> planning flow.
+ * All API calls are mocked via page.route().
+ * Uses page.addInitScript() to seed auth state BEFORE page.goto().
+ *
+ * Jordan's persona: 23, solo, beginner skill level, needs pantry setup.
+ */
+import { expect, test } from "@playwright/test";
 
-// These tests require the dev server running at http://localhost:5173
-// Run: pnpm --filter web dev (in separate terminal)
-// Then: pnpm --filter web test:e2e
+const MOCK_USER = {
+  id: "user-jordan",
+  email: "jordan@staged.test",
+  name: "Jordan",
+  householdId: null as string | null,
+  skillLevel: "beginner",
+  role: "member",
+};
+
+const MOCK_USER_WITH_HH = {
+  ...MOCK_USER,
+  householdId: "hh-jordan",
+};
 
 test.beforeEach(async ({ page }) => {
-  // Clear onboarding store state between tests
-  await page.goto('/onboarding')
-  await page.evaluate(() => localStorage.removeItem('staged-onboarding'))
-  await page.reload()
-})
+  await page.route("**/api/auth/signup", (route) => {
+    route.fulfill({
+      status: 201,
+      contentType: "application/json",
+      body: JSON.stringify({ message: "Account created" }),
+    });
+  });
+  await page.route("**/api/auth/signin", (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ ok: true }),
+    });
+  });
+  await page.route("**/api/auth/me", (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(MOCK_USER),
+    });
+  });
+  await page.route("**/api/households", (route) => {
+    if (route.request().method() === "POST") {
+      route.fulfill({
+        status: 201,
+        contentType: "application/json",
+        body: JSON.stringify({ id: "hh-jordan", name: "Jordan's Household" }),
+      });
+    } else {
+      route.continue();
+    }
+  });
+  await page.route("**/api/households/**", (route) => {
+    route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+  });
+  await page.route("**/api/recipes**", (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify([
+        {
+          id: "r1",
+          title: "Easy Pasta",
+          skill_level: "beginner",
+          zero_waste: false,
+          cook_time_minutes: 20,
+          servings: 2,
+        },
+        {
+          id: "r2",
+          title: "Simple Salad",
+          skill_level: "beginner",
+          zero_waste: true,
+          cook_time_minutes: 10,
+          servings: 1,
+        },
+      ]),
+    });
+  });
+  // block socket.io
+  await page.route("**/socket.io/**", (route) => route.abort());
+});
 
-test('welcome step renders with sign-up and guest options', async ({ page }) => {
-  await expect(page.getByRole('heading', { name: /St.ged/i })).toBeVisible()
-  await expect(page.getByText('Create account')).toBeVisible()
-  await expect(page.getByText('Continue as guest')).toBeVisible()
-})
+test("Jordan: signup page renders correctly", async ({ page }) => {
+  await page.goto("/signup");
+  await expect(page.locator('[data-testid="signup-page"]')).toBeVisible();
+  await expect(page.getByText("Stàged").first()).toBeVisible();
+  await expect(page.locator("#displayName")).toBeVisible();
+  await expect(page.locator("#email")).toBeVisible();
+  await expect(page.locator("#password")).toBeVisible();
+  await expect(page.locator("#passwordConfirm")).toBeVisible();
+});
 
-test('shows sign-up form on Create account click', async ({ page }) => {
-  await page.getByText('Create account').click()
-  await expect(page.getByPlaceholder('Name')).toBeVisible()
-  await expect(page.getByPlaceholder('Email')).toBeVisible()
-  await expect(page.getByPlaceholder('Password (8+ chars)')).toBeVisible()
-})
+test("Jordan: client-side validation on blank submit", async ({ page }) => {
+  await page.goto("/signup");
+  await page.locator('[data-testid="signup-submit"]').click();
+  await expect(page.getByText("Please tell us your name.")).toBeVisible();
+});
 
-test('back button from sign-up form returns to welcome', async ({ page }) => {
-  await page.getByText('Create account').click()
-  await page.getByText('Back').click()
-  await expect(page.getByText('Create account')).toBeVisible()
-})
+test("Jordan: password mismatch shows error", async ({ page }) => {
+  await page.goto("/signup");
+  await page.locator("#displayName").fill("Jordan");
+  await page.locator("#email").fill("jordan@staged.test");
+  await page.locator("#password").fill("password123");
+  await page.locator("#passwordConfirm").fill("different456");
+  await page.locator('[data-testid="signup-submit"]').click();
+  await expect(page.getByText("Passwords don't match.")).toBeVisible();
+});
 
-test('skill step shows beginner/intermediate/advanced options', async ({ page }) => {
-  // Navigate directly to skill step by setting store state
-  await page.evaluate(() => {
-    localStorage.setItem(
-      'staged-onboarding',
-      JSON.stringify({ state: { step: 'skill' }, version: 0 })
-    )
-  })
-  await page.reload()
-  await expect(page.getByText('Your skill level')).toBeVisible()
-  await expect(page.getByText('Beginner')).toBeVisible()
-  await expect(page.getByText('Intermediate')).toBeVisible()
-  await expect(page.getByText('Advanced')).toBeVisible()
-})
+test("Jordan: onboarding step 1 -- skill level selection", async ({ page }) => {
+  // Inject auth with no householdId
+  await page.addInitScript(
+    ({ key, stored }) => {
+      localStorage.setItem(key, JSON.stringify(stored));
+    },
+    {
+      key: "staged-auth",
+      stored: { state: { user: MOCK_USER, isLoading: false }, version: 0 },
+    },
+  );
+  await page.goto("/onboarding");
+  await expect(page.locator('[data-testid="skill-step"]')).toBeVisible();
+  // Jordan selects Beginner (her skill level)
+  await page.locator('[data-testid="skill-beginner"]').click();
+  await expect(page.locator('[data-testid="skill-beginner"]')).toContainText(
+    "Beginner",
+  );
+  // Continue button enabled after selection
+  await page.locator('[data-testid="skill-continue"]').click();
+  await expect(page.locator('[data-testid="household-step"]')).toBeVisible();
+});
 
-test('dietary step shows all preference options', async ({ page }) => {
-  await page.evaluate(() => {
-    localStorage.setItem(
-      'staged-onboarding',
-      JSON.stringify({ state: { step: 'dietary', skillLevel: 'beginner', householdSize: 2 }, version: 0 })
-    )
-  })
-  await page.reload()
-  await expect(page.getByText('Dietary preferences')).toBeVisible()
-  await expect(page.getByText('Vegan')).toBeVisible()
-  await expect(page.getByText('Gluten-free')).toBeVisible()
-  await expect(page.getByText('Nut-free')).toBeVisible()
-})
+test("Jordan: onboarding step 2 -- solo household", async ({ page }) => {
+  await page.addInitScript(
+    ({ key, stored }) => {
+      localStorage.setItem(key, JSON.stringify(stored));
+    },
+    {
+      key: "staged-auth",
+      stored: { state: { user: MOCK_USER, isLoading: false }, version: 0 },
+    },
+  );
+  await page.goto("/onboarding");
+  // Step 1
+  await page.locator('[data-testid="skill-beginner"]').click();
+  await page.locator('[data-testid="skill-continue"]').click();
+  // Step 2: solo
+  await page.locator('[data-testid="household-solo"]').click();
+  await page.locator('[data-testid="household-continue"]').click();
+  // Step 3: dietary
+  await expect(page.locator('[data-testid="dietary-step"]')).toBeVisible();
+});
 
-test('pantry step shows starter templates', async ({ page }) => {
-  await page.evaluate(() => {
-    localStorage.setItem(
-      'staged-onboarding',
-      JSON.stringify({
-        state: { step: 'pantry', skillLevel: 'beginner', householdSize: 2, dietary: [] },
+test("Jordan: full onboarding flow -> planning", async ({ page }) => {
+  await page.addInitScript(
+    ({ key, stored }) => {
+      localStorage.setItem(key, JSON.stringify(stored));
+    },
+    {
+      key: "staged-auth",
+      stored: {
+        state: { user: MOCK_USER_WITH_HH, isLoading: false },
         version: 0,
-      })
-    )
-  })
-  await page.reload()
-  await expect(page.getByText('Starter pantry')).toBeVisible()
-  await expect(page.getByText('Essential kitchen')).toBeVisible()
-  await expect(page.getByRole('button', { name: /Plant-based/ }).first()).toBeVisible()
-})
-
-test('install step shows A2HS guidance', async ({ page }) => {
-  await page.evaluate(() => {
-    localStorage.setItem(
-      'staged-onboarding',
-      JSON.stringify({ state: { step: 'install' }, version: 0 })
-    )
-  })
-  await page.reload()
-  await expect(page.getByText('Add to Home Screen')).toBeVisible()
-  await expect(page.getByText(/offline/i)).toBeVisible()
-  await expect(page.getByText('Skip for now')).toBeVisible()
-})
-
-test('onboarding is recoverable after page refresh mid-flow', async ({ page }) => {
-  await page.evaluate(() => {
-    localStorage.setItem(
-      'staged-onboarding',
-      JSON.stringify({ state: { step: 'skill', userId: 'u1' }, version: 0 })
-    )
-  })
-  await page.reload()
-  // Should resume at skill step, not reset to welcome
-  await expect(page.getByText('Your skill level')).toBeVisible()
-})
-
-test('mobile viewport renders onboarding correctly', async ({ page }) => {
-  await page.evaluate(() => localStorage.removeItem('staged-onboarding'))
-  await page.setViewportSize({ width: 390, height: 844 }) // iPhone 14 size
-  await page.reload()
-  await expect(page.getByRole('heading', { name: /St.ged/i })).toBeVisible()
-  await expect(page.getByText('Create account')).toBeVisible()
-})
+      },
+    },
+  );
+  // Mock plan endpoint for /planning
+  await page.route("**/api/households/**/plans/week**", (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ plan: { id: "plan-1" }, entries: [] }),
+    });
+  });
+  await page.goto("/onboarding");
+  // Step 1: skill
+  await page.locator('[data-testid="skill-home_cook"]').click();
+  await page.locator('[data-testid="skill-continue"]').click();
+  // Step 2: household (solo)
+  await page.locator('[data-testid="household-solo"]').click();
+  await page.locator('[data-testid="household-continue"]').click();
+  // Step 3: dietary (skip)
+  await page.locator('[data-testid="dietary-skip"]').click();
+  // Step 4: pantry (skip)
+  await page.locator('[data-testid="pantry-continue"]').click();
+  // Should navigate to /planning (A2HS not available in test browsers)
+  await page.waitForURL("**/planning", { timeout: 5000 });
+  await expect(page.locator('[data-testid="planning-page"]')).toBeVisible();
+});

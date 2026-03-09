@@ -1,82 +1,174 @@
-import { test, expect } from '@playwright/test'
+/**
+ * Maya Flow -- Eco-Anxious Planner
+ *
+ * Tests recipe library with zero-waste filter.
+ * All API calls mocked. Auth injected via localStorage.
+ *
+ * Maya's persona: 31, zero-waste signal must be effortless to find.
+ */
+import { expect, test } from "@playwright/test";
 
-// These tests require the dev server at http://localhost:5173
-// The API must be running at http://localhost:3000 for full integration,
-// or the pages render gracefully with empty/error states.
+const MOCK_USER = {
+  id: "user-maya",
+  email: "maya@staged.test",
+  name: "Maya",
+  householdId: "hh-eco",
+  skillLevel: "home_cook",
+  role: "member",
+};
 
-test.describe('Recipe Library', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/recipes')
-  })
+const MOCK_RECIPES = [
+  {
+    id: "r-pasta",
+    title: "Pasta Primavera",
+    skill_level: "beginner",
+    zero_waste: false,
+    cook_time_minutes: 20,
+    servings: 2,
+  },
+  {
+    id: "r-lentil",
+    title: "Red Lentil Soup",
+    skill_level: "beginner",
+    zero_waste: true,
+    cook_time_minutes: 25,
+    servings: 4,
+  },
+  {
+    id: "r-steak",
+    title: "Grilled Steak",
+    skill_level: "confident",
+    zero_waste: false,
+    cook_time_minutes: 30,
+    servings: 2,
+  },
+];
 
-  test('renders recipe library heading', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: 'Recipes' })).toBeVisible()
-  })
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(
+    ({ key, stored }) => {
+      localStorage.setItem(key, JSON.stringify(stored));
+    },
+    {
+      key: "staged-auth",
+      stored: { state: { user: MOCK_USER, isLoading: false }, version: 0 },
+    },
+  );
 
-  test('shows search input', async ({ page }) => {
-    await expect(page.getByPlaceholder('Search recipes...')).toBeVisible()
-  })
+  await page.route("**/api/auth/me", (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(MOCK_USER),
+    });
+  });
 
-  test('shows diet filter chips', async ({ page }) => {
-    await expect(page.getByTestId('diet-filters')).toBeVisible()
-    await expect(page.getByText('vegan')).toBeVisible()
-    await expect(page.getByText('gluten-free')).toBeVisible()
-  })
+  // Handle both /api/recipes and /api/recipes?... patterns
+  await page.route("**/api/recipes**", (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(MOCK_RECIPES),
+    });
+  });
+  await page.route("**/socket.io/**", (route) => route.abort());
+});
 
-  test('shows import URL input', async ({ page }) => {
-    await expect(page.getByTestId('import-url')).toBeVisible()
-    await expect(page.getByTestId('import-btn')).toBeVisible()
-  })
+test("Maya: recipe library renders with all recipes", async ({ page }) => {
+  await page.goto("/recipes");
+  await expect(page.locator('[data-testid="recipe-library"]')).toBeVisible();
+  await expect(
+    page.locator('[data-testid="recipe-card-r-pasta"]'),
+  ).toBeVisible();
+  await expect(
+    page.locator('[data-testid="recipe-card-r-lentil"]'),
+  ).toBeVisible();
+});
 
-  test('import button is disabled when URL empty', async ({ page }) => {
-    await expect(page.getByTestId('import-btn')).toBeDisabled()
-  })
+test("Maya: skill filter chips are visible (Jordan Confidence Rule)", async ({
+  page,
+}) => {
+  await page.goto("/recipes");
+  await expect(page.locator('[data-testid="skill-filters"]')).toBeVisible();
+  await expect(
+    page.locator('[data-testid="skill-filter-beginner"]'),
+  ).toBeVisible();
+  await expect(
+    page.locator('[data-testid="skill-filter-home_cook"]'),
+  ).toBeVisible();
+  await expect(
+    page.locator('[data-testid="skill-filter-confident"]'),
+  ).toBeVisible();
+});
 
-  test('import button enabled after typing URL', async ({ page }) => {
-    await page.getByTestId('import-url').fill('https://example.com/recipe')
-    await expect(page.getByTestId('import-btn')).toBeEnabled()
-  })
+test("Maya: zero-waste toggle is visible (Maya Signal)", async ({ page }) => {
+  await page.goto("/recipes");
+  await expect(page.locator('[data-testid="zero-waste-toggle"]')).toBeVisible();
+});
 
-  test('diet filter toggles active state on click', async ({ page }) => {
-    const veganBtn = page.getByText('vegan')
-    await veganBtn.click()
-    // After click it should appear active (has green color classes applied)
-    await expect(veganBtn).toBeVisible()
-    // Click again to deselect
-    await veganBtn.click()
-    await expect(veganBtn).toBeVisible()
-  })
+test("Maya: zero-waste toggle filters to only zero-waste recipes", async ({
+  page,
+}) => {
+  await page.goto("/recipes");
+  // All 3 recipes visible initially
+  await expect(
+    page.locator('[data-testid="recipe-card-r-pasta"]'),
+  ).toBeVisible();
+  await expect(
+    page.locator('[data-testid="recipe-card-r-lentil"]'),
+  ).toBeVisible();
+  await expect(
+    page.locator('[data-testid="recipe-card-r-steak"]'),
+  ).toBeVisible();
 
-  test('renders empty state when no recipes exist', async ({ page }) => {
-    // API is likely not running in CI, so we get empty or error state
-    // Just verify the page loads without crash
-    await expect(page.getByTestId('recipe-library')).toBeVisible()
-  })
-})
+  // Enable zero-waste filter
+  await page.locator('[data-testid="zero-waste-toggle"]').click();
 
-test.describe('Recipe Detail', () => {
-  test('navigating to /recipes/unknown shows back link', async ({ page }) => {
-    await page.goto('/recipes/unknown-id')
-    // Should show either the recipe or an error with a back link
-    await expect(
-      page.getByRole('link', { name: /Back to library/i }).or(page.getByTestId('recipe-detail'))
-    ).toBeVisible({ timeout: 5000 })
-  })
-})
+  // Only the zero-waste recipe should be visible
+  await expect(
+    page.locator('[data-testid="recipe-card-r-lentil"]'),
+  ).toBeVisible();
+  await expect(
+    page.locator('[data-testid="recipe-card-r-pasta"]'),
+  ).not.toBeVisible();
+  await expect(
+    page.locator('[data-testid="recipe-card-r-steak"]'),
+  ).not.toBeVisible();
+});
 
-test.describe('Recipe pages mobile viewport', () => {
-  test('recipe library renders on mobile', async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 })
-    await page.goto('/recipes')
-    await expect(page.getByRole('heading', { name: 'Recipes' })).toBeVisible()
-    await expect(page.getByPlaceholder('Search recipes...')).toBeVisible()
-  })
-})
+test("Maya: zero-waste toggle off restores all recipes", async ({ page }) => {
+  await page.goto("/recipes");
+  // Toggle on
+  await page.locator('[data-testid="zero-waste-toggle"]').click();
+  await expect(
+    page.locator('[data-testid="recipe-card-r-lentil"]'),
+  ).toBeVisible();
+  await expect(
+    page.locator('[data-testid="recipe-card-r-pasta"]'),
+  ).not.toBeVisible();
 
-test.describe('Cooking view', () => {
-  test('navigating to cook route shows cooking view or redirect', async ({ page }) => {
-    await page.goto('/recipes/unknown-id/cook')
-    // Should show cooking-view or skeleton loading - just not crash
-    await expect(page).toHaveURL(/\/recipes\/unknown-id\/cook/)
-  })
-})
+  // Toggle off
+  await page.locator('[data-testid="zero-waste-toggle"]').click();
+  await expect(
+    page.locator('[data-testid="recipe-card-r-pasta"]'),
+  ).toBeVisible();
+  await expect(
+    page.locator('[data-testid="recipe-card-r-steak"]'),
+  ).toBeVisible();
+});
+
+test("Maya: skill filter shows only beginner recipes", async ({ page }) => {
+  await page.goto("/recipes");
+  await page.locator('[data-testid="skill-filter-beginner"]').click();
+  // beginner recipes
+  await expect(
+    page.locator('[data-testid="recipe-card-r-pasta"]'),
+  ).toBeVisible();
+  await expect(
+    page.locator('[data-testid="recipe-card-r-lentil"]'),
+  ).toBeVisible();
+  // confident recipe hidden
+  await expect(
+    page.locator('[data-testid="recipe-card-r-steak"]'),
+  ).not.toBeVisible();
+});
