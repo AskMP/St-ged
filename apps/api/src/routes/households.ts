@@ -72,6 +72,29 @@ const householdsRouter = new Hono()
       let uid = ((c as any).get("user") as any)?.id;
       if (!uid && process.env.NODE_ENV === "test") uid = "test-user";
       await joinHousehold(code, uid!);
+
+      // Re-issue JWT so client token reflects the joined householdId.
+      if (process.env.NODE_ENV !== "test") {
+        const [profile] = await db
+          .select({
+            id: users.id,
+            email: users.email,
+            displayName: users.displayName,
+            householdId: users.householdId,
+          })
+          .from(users)
+          .where(eq(users.id, uid!))
+          .limit(1);
+        if (profile) {
+          await issueSessionToken(c, {
+            id: profile.id,
+            email: profile.email,
+            name: profile.displayName,
+            householdId: profile.householdId,
+          });
+        }
+      }
+
       return c.json({ success: true });
     } catch (err: any) {
       throw new HTTPException(err.status || 500, { message: err.message });
