@@ -1,3 +1,16 @@
+## Rescue Iteration 6 -- rescue-06: Fix SPA Signin (JWT cookie endpoint)
+
+- **Status**: Complete
+- **Branch**: stg-unj/rescue-00-schema
+- **Tasks completed**: All -- /login endpoint, api-client update, Login.tsx + SignUp.tsx fixes, cookie round-trip verified, 4 new tests, known-errors + CORRECTION_LOG updated
+- **Key finding**: Two bugs compounded: (1) Auth.js Credentials signin is redirect-based -- SPA fetch gets HTML not session cookie; fixed by custom POST /api/auth/login using encode() from next-auth/jwt. (2) getSessionUser() passed c.req.raw (Web Fetch API Request) to getToken() which reads req.cookies -- but Fetch API Request has no .cookies; fixed by parsing Cookie header manually.
+- **Salt gotcha**: @auth/core/jwt encode uses salt="next-auth.session-token" but next-auth/jwt v4 getToken() decodes with salt="" (empty string default). Must use encode() from next-auth/jwt, not @auth/core/jwt.
+- **Verification**: curl round-trip: POST /login -> 200 + JWT cookie -> GET /me with cookie -> 200 user data. 83 API tests pass (4 new login tests added).
+- **Tests**: 83 passed, 5 skipped, 0 failing
+- **Time**: 2026-03-09
+
+---
+
 ## Rescue Iteration 5 -- rescue-05: Debug and fix browser signup 400 error
 
 - **Status**: Complete (AUTH-007 fix applied)

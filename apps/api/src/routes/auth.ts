@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
+import { encode } from "next-auth/jwt";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import { pool, query, db } from "../lib/db";
@@ -123,6 +124,85 @@ authRouter.post("/signup", async (c) => {
   });
 
   return c.json({ message: "Account created" }, 201);
+});
+
+// Custom SPA-compatible login endpoint.
+// Auth.js Credentials provider returns 302 redirect for server flows; SPA needs
+// a JSON response. This endpoint validates credentials, creates an Auth.js-
+// compatible JWT via encode(), and sets the session cookie directly.
+// getSessionUser() calls getToken() from next-auth/jwt which reads this cookie.
+// NOTE: encode() from next-auth/jwt v4 uses salt="" (empty string) by default,
+// which matches the salt="" that getToken() passes to decode(). Do NOT use
+// @auth/core/jwt encode with salt="next-auth.session-token" -- that encoding
+// is incompatible with next-auth v4 getToken().
+authRouter.post("/login", async (c) => {
+  let body: { email?: string; password?: string };
+  try {
+    body = await c.req.json<{ email?: string; password?: string }>();
+  } catch {
+    throw new HTTPException(400, { message: "invalid json" });
+  }
+
+  if (!body.email || !body.password) {
+    throw new HTTPException(400, { message: "email and password required" });
+  }
+
+  const [user] = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      displayName: users.displayName,
+      hashedPassword: users.hashedPassword,
+      householdId: users.householdId,
+      skillLevel: users.skillLevel,
+    })
+    .from(users)
+    .where(eq(users.email, body.email))
+    .limit(1);
+
+  if (!user || !user.hashedPassword) {
+    throw new HTTPException(401, { message: "Invalid credentials" });
+  }
+
+  const valid = await bcrypt.compare(body.password, user.hashedPassword);
+  if (!valid) {
+    throw new HTTPException(401, { message: "Invalid credentials" });
+  }
+
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (!secret) {
+    throw new HTTPException(500, { message: "Server misconfigured" });
+  }
+
+  // encode() from next-auth/jwt uses salt="" by default, matching
+  // what getToken() passes to decode() when reading the cookie.
+  const token = await encode({
+    token: {
+      sub: user.id,
+      userId: user.id,
+      email: user.email,
+      name: user.displayName,
+      role: "member",
+    },
+    secret,
+  });
+
+  const isProd = process.env.NODE_ENV === "production";
+  c.header(
+    "Set-Cookie",
+    `next-auth.session-token=${token}; Path=/; HttpOnly; SameSite=Lax${isProd ? "; Secure" : ""}`,
+  );
+
+  return c.json({
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.displayName,
+      householdId: user.householdId,
+      skillLevel: user.skillLevel,
+      role: "member",
+    },
+  });
 });
 
 // create a guest session (public endpoint)

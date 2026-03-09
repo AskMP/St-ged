@@ -26,14 +26,18 @@ export const apiClient = {
       });
     },
     signin(email: string, password: string) {
-      // Auth.js Credentials provider expects form-encoded body, not JSON
-      const form = new URLSearchParams();
-      form.set("email", email);
-      form.set("password", password);
-      return request<any>("/api/auth/signin", {
+      return request<{
+        user: {
+          id: string;
+          email: string;
+          name: string;
+          householdId: string | null;
+          skillLevel: string;
+          role: string;
+        };
+      }>("/api/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: form.toString(),
+        body: JSON.stringify({ email, password }),
       });
     },
     guest() {

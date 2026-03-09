@@ -107,12 +107,81 @@ skipIfNoDB("auth routes", () => {
     expect(anon.status).toBe(401);
   });
 
-  // NOTE: Full signin JWT flow tests (POST /signin + cookie extraction) require
-  // live Auth.js JWT infrastructure and a running auth handler. These are left
-  // as integration tests that require the full server stack. The signup, /me,
-  // guest, and invite tests above cover the critical paths that were broken by
-  // AUTH-001 through AUTH-005.
+  // rescue-06: custom /login endpoint tests
+  it("POST /login with valid credentials -> 200 with user JSON and set-cookie", async () => {
+    await signup("login@test.com", "password123", "LoginUser");
+    const res = await app.request("http://localhost/api/auth/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        email: "login@test.com",
+        password: "password123",
+      }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.user).toMatchObject({
+      email: "login@test.com",
+      name: "LoginUser",
+      role: "member",
+    });
+    expect(typeof body.user.id).toBe("string");
+    const cookie = res.headers.get("set-cookie");
+    expect(cookie).toContain("next-auth.session-token=");
+    expect(cookie).toContain("HttpOnly");
+  });
+
+  it("POST /login with wrong password -> 401", async () => {
+    await signup("wrong@test.com", "password123", "WrongUser");
+    const res = await app.request("http://localhost/api/auth/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "wrong@test.com", password: "badpass" }),
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it("POST /login with unknown email -> 401", async () => {
+    const res = await app.request("http://localhost/api/auth/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        email: "nobody@test.com",
+        password: "password123",
+      }),
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it("POST /login then GET /me with returned cookie -> 200", async () => {
+    await signup("roundtrip@test.com", "password123", "RoundTrip");
+    const loginRes = await app.request("http://localhost/api/auth/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        email: "roundtrip@test.com",
+        password: "password123",
+      }),
+    });
+    expect(loginRes.status).toBe(200);
+    const cookie = loginRes.headers.get("set-cookie") ?? "";
+    // Extract token value from set-cookie header
+    const tokenMatch = cookie.match(/next-auth\.session-token=([^;]+)/);
+    expect(tokenMatch).toBeTruthy();
+    const tokenValue = tokenMatch![1];
+
+    const meRes = await app.request("http://localhost/api/auth/me", {
+      headers: { cookie: `next-auth.session-token=${tokenValue}` },
+    });
+    expect(meRes.status).toBe(200);
+    const meBody = await meRes.json();
+    expect(meBody.email).toBe("roundtrip@test.com");
+    expect("householdId" in meBody).toBe(true);
+  });
+
+  // NOTE: Auth.js /signin redirect-based flow intentionally not tested here.
+  // See rescue-06 PRD and known-errors.md AUTH section.
   test.skip("POST /signin with correct credentials -> 200 with set-cookie", () => {
-    // requires full Auth.js JWT stack; tested via manual curl after server start
+    // superseded by /login endpoint (rescue-06)
   });
 });

@@ -17,11 +17,34 @@ export interface SessionUser {
 // Auth.js JWT always populates token.sub with the user ID.
 // We also check token.userId set by the jwt callback in authConfig.
 // See CODE_REVIEW_2026-03-08.md AUTH-001.
+//
+// AUTH-COOKIE fix (rescue-06): next-auth/jwt v4 getToken() reads req.cookies
+// (Next.js IncomingMessage style). Web Fetch API Request objects have no
+// .cookies property -- cookies are in the Cookie header. We parse the Cookie
+// header into a plain object and attach it to a wrapper so SessionStore can
+// read the session token.
 export async function getSessionUser(
   req: Request,
 ): Promise<SessionUser | null> {
+  // Parse the Cookie header into a { name: value } map.
+  const cookieHeader = req.headers.get("cookie") ?? "";
+  const cookies: Record<string, string> = {};
+  for (const part of cookieHeader.split(";")) {
+    const eqIdx = part.indexOf("=");
+    if (eqIdx === -1) continue;
+    const name = part.slice(0, eqIdx).trim();
+    const value = part.slice(eqIdx + 1).trim();
+    cookies[name] = value;
+  }
+
+  // Construct a req-like object with cookies so getToken() can find the session.
+  const reqWithCookies = {
+    cookies,
+    headers: req.headers,
+  };
+
   const token = await getToken({
-    req: req as Parameters<typeof getToken>[0]["req"],
+    req: reqWithCookies as unknown as Parameters<typeof getToken>[0]["req"],
     secret: process.env.NEXTAUTH_SECRET,
   });
   if (!token) return null;

@@ -60,10 +60,10 @@ export default function SignUp() {
 
     try {
       await apiClient.auth.signup(email, password, displayName);
-      // Auto sign-in after successful registration
-      await apiClient.auth.signin(email, password);
-      const me = await apiClient.auth.me();
-      setUser(me);
+      // Auto sign-in after successful registration using custom /login endpoint
+      // (Auth.js Credentials signin is redirect-based -- see known-errors.md AUTH section)
+      const { user } = await apiClient.auth.signin(email, password);
+      setUser(user);
       navigate("/onboarding");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);

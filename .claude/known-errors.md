@@ -179,3 +179,12 @@ Accumulated from real sessions. Each entry has a trigger, the fix, and the conte
 - **Fix**: (1) Scope `initAuth()` to only Auth.js action paths (`/api/auth/signin`, `/api/auth/signout`, `/api/auth/session`, `/api/auth/csrf`, `/api/auth/callback/*`, `/api/auth/_log`). (2) Set `basePath: "/api/auth"` explicitly in `authConfig` so Auth.js always parses actions correctly regardless of `NEXTAUTH_URL`.
 - **Why curl works**: curl test requests typically don't hit the `/api/auth/signin` auto-signin step that browsers do after signup. Also, older curl tests used `app.use("*", initAuth())` which set the authConfig but `initAuthConfig` is middleware-only -- it doesn't call `Auth()`. The 400 came from `authHandler()` calling `Auth()` with incorrect basePath.
 - **Context**: Rescue-05 -- browser signup 400 investigation
+
+### Auth.js Credentials signin is redirect-based -- incompatible with SPA fetch
+
+- **Symptom**: `POST /api/auth/signin` (form-encoded) returns 302 redirect to HTML page. SPA fetch follows redirect and gets HTML instead of session cookie. User never gets authenticated.
+- **Cause**: Auth.js Credentials provider is designed for server-rendered flows (Next.js). The `signIn({ redirect: false })` option only exists in Next.js client helpers, not `@hono/auth-js`. There is no way to get a JSON response from the built-in `/api/auth/signin` endpoint in a Hono context.
+- **Fix**: Create a custom `POST /api/auth/login` endpoint that: (1) validates credentials via bcrypt against `users.hashedPassword`, (2) calls `encode()` from `next-auth/jwt` to create the session JWT (using `salt: ""` default -- matches `getToken()` decode behavior), (3) sets `next-auth.session-token` cookie directly, (4) returns `200 { user: {...} }`. Update `apiClient.auth.signin()` to call `/api/auth/login` instead.
+- **Also fix**: `getSessionUser()` must parse the Cookie header manually -- `getToken()` reads `req.cookies` (Next.js IncomingMessage style) but `c.req.raw` is a Web Fetch API `Request` with no `.cookies` property. Build a plain `cookies` object from the `Cookie` header and pass it wrapped in a fake `req` object.
+- **Salt gotcha**: `@auth/core/jwt` encode uses `salt: "next-auth.session-token"` -- but `next-auth/jwt` v4 `getToken()` calls `decode()` with `salt: ""` (empty string default). Use `encode()` from `next-auth/jwt` (NOT `@auth/core/jwt`) with no explicit salt, or `salt: ""`.
+- **Context**: Rescue-06

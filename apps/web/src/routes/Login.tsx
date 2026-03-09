@@ -30,11 +30,10 @@ export default function Login() {
     setLoading(true);
 
     try {
-      await apiClient.auth.signin(email, password);
-      const me = await apiClient.auth.me();
-      setUser(me);
+      const { user } = await apiClient.auth.signin(email, password);
+      setUser(user);
       // Route to onboarding if no household yet, otherwise respect returnTo
-      if (!me.householdId) {
+      if (!user.householdId) {
         navigate("/onboarding");
       } else {
         navigate(returnTo);
