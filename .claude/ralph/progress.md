@@ -1,3 +1,29 @@
+## Rescue Iteration 9 -- rescue-07 Complete: All 9 tasks done
+
+- **Status**: Complete
+- **Branch**: stg-unj/rescue-00-schema
+- **Commits**: 072d261 (pantry), 2a06155 (lists), 7dcd0df (MealPlanEntry), c54829e (plans), 0234324 (recipes), 6f94250 (test fixes), 986fc6b (manifest)
+- **Summary**: All 5 core services migrated from in-memory to Drizzle ORM. DB constraints handled (servings_base NOT NULL, name NOT NULL). Tests updated for FK constraints. Smoke test confirmed persistence across API restart. rescue-07 marked complete in manifest (7/9 PRDs).
+- **Gotchas**: DB NOT NULL constraints on columns with Drizzle .default() don't apply server-side for existing tables. fridge-clearance topN=5 caused test flakiness with accumulated test data -- use unique ingredient names. plan tests need real DB recipes for FK constraint (not in-memory createRecipe).
+- **Next task**: rescue-08 -- multi-household support
+- **Time**: 2026-03-09
+
+---
+
+## Rescue Iteration 8 -- rescue-07 Task 2: Migrate pantry service to Drizzle ORM
+
+- **Status**: Complete
+- **Branch**: stg-unj/rescue-00-schema (commit 072d261)
+- **BD task**: stg-fi2 (closed) -- PRD ID STG-301 was phantom; created real bd task
+- **Files changed**: `apps/api/src/services/pantry.ts`
+- **Patterns discovered**: get-or-create for pantry container (pantry table is 1:1 with household). DB column name mapping: ingredientName<->name, quantityValue<->quantity, quantityUnit<->unit, expiryDate<->expiresAt.
+- **Gotchas**: PRD-referenced IDs (STG-301 etc.) do not exist in bd -- must create real tasks on the fly.
+- **Tests**: 6 pantry tests pass; type-check clean
+- **Next task**: rescue-07 Task 3 -- migrate list-service.ts
+- **Time**: 2026-03-09
+
+---
+
 ## Rescue Iteration 7 -- rescue-07 Task 1: Migrate household-service.ts to Drizzle ORM
 
 - **Status**: Complete
