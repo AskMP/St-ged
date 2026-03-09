@@ -1,72 +1,103 @@
-import { useEffect, useState } from 'react'
-import { apiClient } from '../lib/api-client'
-import { useOnboardingStore } from '../lib/onboarding-store'
-import type { CostEntry, RotationAssignment, RotationSettings } from '@staged/types'
+import type {
+  CostEntry,
+  RotationAssignment,
+  RotationSettings,
+} from "@staged/types";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { apiClient } from "../lib/api-client";
+import { useAuthStore } from "../lib/auth-store";
 
 export default function HouseholdOps() {
-  const { householdId } = useOnboardingStore()
-  const hid = householdId ?? 'demo-household'
+  const user = useAuthStore((s) => s.user);
+  const hid = user?.householdId;
 
-  const [total, setTotal] = useState('')
-  const [history, setHistory] = useState<CostEntry[]>([])
+  const [total, setTotal] = useState("");
+  const [history, setHistory] = useState<CostEntry[]>([]);
 
-  const [frequency, setFrequency] = useState<'weekly' | 'biweekly'>('weekly')
-  const [members, setMembers] = useState<string>('')
-  const [rotation, setRotation] = useState<RotationSettings | null>(null)
-  const [assignments, setAssignments] = useState<RotationAssignment[]>([])
+  const [frequency, setFrequency] = useState<"weekly" | "biweekly">("weekly");
+  const [members, setMembers] = useState<string>("");
+  const [rotation, setRotation] = useState<RotationSettings | null>(null);
+  const [assignments, setAssignments] = useState<RotationAssignment[]>([]);
 
   const loadHistory = async () => {
     try {
-      const h = await apiClient.households.costHistory(hid)
-      setHistory(h)
+      const h = await apiClient.households.costHistory(hid!);
+      setHistory(h);
     } catch {
       // ignore
     }
-  }
+  };
 
   const loadRotation = async () => {
     try {
-      const r = await apiClient.households.getRotation(hid)
-      setRotation(r)
-      const a = await apiClient.households.getRotationAssignments(hid, 4)
-      setAssignments(a)
+      const r = await apiClient.households.getRotation(hid!);
+      setRotation(r);
+      const a = await apiClient.households.getRotationAssignments(hid!, 4);
+      setAssignments(a ?? []);
     } catch {
       // ignore
     }
-  }
+  };
 
   useEffect(() => {
     if (hid) {
-      loadHistory()
-      loadRotation()
+      loadHistory();
+      loadRotation();
     }
-  }, [hid])
+  }, [hid]);
 
-  const [showReminder, setShowReminder] = useState(false)
+  const [showReminder, setShowReminder] = useState(false);
 
   const handleAddCost = async () => {
-    if (!total) return
+    if (!total) return;
     try {
-      const e = await apiClient.households.addCost(hid, parseFloat(total))
-      setHistory((h) => [...h, e])
-      setTotal('')
-      setShowReminder(true)
-      setTimeout(() => setShowReminder(false), 4000)
+      const e = await apiClient.households.addCost(hid!, parseFloat(total));
+      setHistory((h) => [...h, e]);
+      setTotal("");
+      setShowReminder(true);
+      setTimeout(() => setShowReminder(false), 4000);
     } catch (err) {
-      console.error(err)
+      console.error(err);
     }
-  }
+  };
 
   const handleSetRotation = async () => {
-    const memberList = members.split(',').map((m) => m.trim()).filter(Boolean)
+    const memberList = members
+      .split(",")
+      .map((m) => m.trim())
+      .filter(Boolean);
     try {
-      const r = await apiClient.households.setRotation(hid, frequency, memberList)
-      setRotation(r)
-      const a = await apiClient.households.getRotationAssignments(hid, 4)
-      setAssignments(a)
+      const r = await apiClient.households.setRotation(
+        hid!,
+        frequency,
+        memberList,
+      );
+      setRotation(r);
+      const a = await apiClient.households.getRotationAssignments(hid!, 4);
+      setAssignments(a ?? []);
     } catch (err) {
-      console.error(err)
+      console.error(err);
     }
+  };
+
+  if (!hid) {
+    return (
+      <div
+        className="max-w-xl mx-auto py-6 px-4"
+        data-testid="household-ops-no-household"
+      >
+        <p className="text-stone-600 mb-4">
+          You need to set up a household first.
+        </p>
+        <Link
+          to="/onboarding"
+          className="px-4 py-2 bg-green-600 text-white rounded"
+        >
+          Set up a household
+        </Link>
+      </div>
+    );
   }
 
   return (
@@ -103,14 +134,20 @@ export default function HouseholdOps() {
         {history.length > 0 && (
           <>
             {/* running totals per member */}
-            <div data-testid="cost-totals" className="mb-2 text-sm text-stone-700">
+            <div
+              data-testid="cost-totals"
+              className="mb-2 text-sm text-stone-700"
+            >
               {Object.entries(
-                history.reduce((acc, e) => {
-                  for (const [u, amt] of Object.entries(e.splits)) {
-                    acc[u] = (acc[u] || 0) + amt
-                  }
-                  return acc
-                }, {} as Record<string, number>),
+                history.reduce(
+                  (acc, e) => {
+                    for (const [u, amt] of Object.entries(e.splits)) {
+                      acc[u] = (acc[u] || 0) + amt;
+                    }
+                    return acc;
+                  },
+                  {} as Record<string, number>,
+                ),
               ).map(([u, amt]) => (
                 <span key={u} className="mr-4">
                   {u}: ${amt.toFixed(2)}
@@ -128,12 +165,12 @@ export default function HouseholdOps() {
               <tbody>
                 {history.map((e) => (
                   <tr key={e.id}>
-                    <td>{e.date.split('T')[0]}</td>
+                    <td>{e.date.split("T")[0]}</td>
                     <td>${e.total.toFixed(2)}</td>
                     <td>
                       {Object.entries(e.splits)
                         .map(([u, amt]) => `${u}: $${amt.toFixed(2)}`)
-                        .join(', ')}
+                        .join(", ")}
                     </td>
                   </tr>
                 ))}
@@ -158,7 +195,9 @@ export default function HouseholdOps() {
           </select>
         </div>
         <div className="mb-2">
-          <label className="block text-sm mb-1">Members (comma-separated)</label>
+          <label className="block text-sm mb-1">
+            Members (comma-separated)
+          </label>
           <input
             type="text"
             value={members}
@@ -177,7 +216,7 @@ export default function HouseholdOps() {
         {rotation && rotation.members && (
           <div data-testid="rotation-settings" className="mb-4">
             <div>Frequency: {rotation.frequency}</div>
-            <div>Members: {rotation.members.join(', ')}</div>
+            <div>Members: {rotation.members.join(", ")}</div>
           </div>
         )}
         {assignments.length > 0 && (
@@ -200,5 +239,5 @@ export default function HouseholdOps() {
         )}
       </section>
     </div>
-  )
+  );
 }
