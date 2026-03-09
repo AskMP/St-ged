@@ -202,7 +202,7 @@ implementation:
 
 ---
 
-### Task 4: Fix offline/connection status indicator `[BD:STG-323]`
+### Task 4: Fix offline/connection status indicator `[BD:stg-80s]` ✓
 
 - **Type**: task
 - **Priority**: P2

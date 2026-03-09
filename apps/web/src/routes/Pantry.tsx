@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/lib/auth-store";
+import { useOnlineStatus } from "@/lib/use-online-status";
 
 /**
  * Pantry page -- Sam's Fridge Rule.
@@ -47,6 +48,7 @@ function sortByExpiry(items: PantryItem[]): PantryItem[] {
 export default function Pantry() {
   const user = useAuthStore((s) => s.user);
   const householdId = user?.householdId;
+  const isOnline = useOnlineStatus();
 
   const [items, setItems] = useState<PantryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -173,6 +175,14 @@ export default function Pantry() {
 
   return (
     <div className="max-w-2xl mx-auto py-6 px-4" data-testid="pantry-page">
+      {!isOnline && (
+        <div
+          data-testid="offline-banner"
+          className="mb-4 px-4 py-2 rounded-lg bg-amber-100 text-amber-800 text-sm border border-amber-300"
+        >
+          You're offline -- changes will sync when you reconnect.
+        </div>
+      )}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-stone-900">Pantry</h1>
         <Link

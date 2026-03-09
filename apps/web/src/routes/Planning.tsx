@@ -3,13 +3,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/lib/auth-store";
-import {
-  type ConnectionStatus,
-  getSocket,
-  joinHousehold,
-  leaveHousehold,
-  onConnectionChange,
-} from "@/lib/socket";
+import { getSocket, joinHousehold, leaveHousehold } from "@/lib/socket";
+import { useOnlineStatus } from "@/lib/use-online-status";
 import { enqueue, flushQueue } from "@/lib/sync-queue";
 
 // ---- Types (local, not crossing into packages/types) ----
@@ -67,12 +62,11 @@ interface ActiveCell {
 export default function Planning() {
   const user = useAuthStore((s) => s.user);
   const hid = user?.householdId ?? "demo-household";
+  const isOnline = useOnlineStatus();
 
   const [weekStart, setWeekStart] = useState(() => getMondayOfWeek(new Date()));
   const [weekPlan, setWeekPlan] = useState<WeekPlan | null>(null);
   const [groceryList, setGroceryList] = useState<GroceryList | null>(null);
-  const [connectionStatus, setConnectionStatus] =
-    useState<ConnectionStatus>("disconnected");
   const [loading, setLoading] = useState(true);
   const [listLoading, setListLoading] = useState(false);
   const [pendingSync, setPendingSync] = useState(0);
@@ -121,7 +115,6 @@ export default function Planning() {
 
   // Socket.io setup
   useEffect(() => {
-    const unsub = onConnectionChange(setConnectionStatus);
     joinHousehold(hid);
 
     const socket = getSocket();
@@ -144,7 +137,6 @@ export default function Planning() {
     socket.on("plan:recipe:remove", onRemove);
 
     return () => {
-      unsub();
       leaveHousehold(hid);
       socket.off("plan:recipe:assign", onAssign);
       socket.off("plan:recipe:remove", onRemove);
@@ -345,6 +337,16 @@ export default function Planning() {
 
   return (
     <div data-testid="planning-page" className="max-w-4xl mx-auto py-6 px-4">
+      {/* Offline banner -- Riley's connection awareness requirement */}
+      {!isOnline && (
+        <div
+          data-testid="offline-banner"
+          className="mb-4 px-4 py-2 rounded-lg bg-amber-100 text-amber-800 text-sm border border-amber-300"
+        >
+          You're offline -- changes will sync when you reconnect.
+        </div>
+      )}
+
       {/* Darius 5pm Rule: Tonight strip */}
       {tonightEntry && (
         <div
@@ -365,9 +367,6 @@ export default function Planning() {
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-stone-900">Meal Plan</h1>
-          {connectionStatus !== "connected" && (
-            <span className="text-xs text-stone-400">{connectionStatus}</span>
-          )}
         </div>
         <div className="flex items-center gap-3">
           <span data-testid="budget-summary" className="text-sm text-stone-600">
