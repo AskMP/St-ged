@@ -1,67 +1,67 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { apiClient } from '../lib/api-client'
+import type { GroceryListItem } from "@staged/types";
+import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { apiClient } from "@/lib/api-client";
+import { useAuthStore } from "@/lib/auth-store";
 import {
   type ConnectionStatus,
+  getSocket,
   joinHousehold,
   leaveHousehold,
   onConnectionChange,
-  getSocket,
-} from '../lib/socket'
-import { enqueue, flushQueue } from '../lib/sync-queue'
-import { useOnboardingStore } from '../lib/onboarding-store'
-import type { GroceryListItem } from '@staged/types'
+} from "@/lib/socket";
+import { enqueue, flushQueue } from "@/lib/sync-queue";
 
 // ---- Types (local, not crossing into packages/types) ----
 
 interface MealEntry {
-  id: string
-  recipeId: string
-  recipeTitle?: string
-  date: string
-  mealType: 'breakfast' | 'lunch' | 'dinner'
+  id: string;
+  recipeId: string;
+  recipeTitle?: string;
+  date: string;
+  mealType: "breakfast" | "lunch" | "dinner";
 }
 
 interface WeekPlan {
-  plan: { id: string }
-  entries: MealEntry[]
+  plan: { id: string };
+  entries: MealEntry[];
 }
 
 interface GroceryList {
-  id: string
-  name?: string
-  items: GroceryListItem[]
+  id: string;
+  name?: string;
+  items: GroceryListItem[];
 }
 
 // ---- Helpers ----
 
-const MEAL_TYPES = ['breakfast', 'lunch', 'dinner'] as const
+const MEAL_TYPES = ["breakfast", "lunch", "dinner"] as const;
 
 function getMondayOfWeek(date: Date): Date {
-  const d = new Date(date)
-  const day = d.getDay()
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
-  d.setDate(diff)
-  d.setHours(0, 0, 0, 0)
-  return d
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  d.setDate(diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
 }
 
 function formatDate(d: Date): string {
-  return d.toISOString().split('T')[0]
+  return d.toISOString().split("T")[0] ?? d.toISOString().slice(0, 10);
 }
 
 function addDays(d: Date, n: number): Date {
-  const result = new Date(d)
-  result.setDate(result.getDate() + n)
-  return result
+  const result = new Date(d);
+  result.setDate(result.getDate() + n);
+  return result;
 }
 
 function ConnectionBadge({ status }: { status: ConnectionStatus }) {
   const colors: Record<ConnectionStatus, string> = {
-    connected: 'bg-green-500',
-    connecting: 'bg-yellow-400',
-    disconnected: 'bg-stone-400',
-  }
+    connected: "bg-green-500",
+    connecting: "bg-yellow-400",
+    disconnected: "bg-stone-400",
+  };
   return (
     <span
       data-testid="connection-badge"
@@ -70,135 +70,194 @@ function ConnectionBadge({ status }: { status: ConnectionStatus }) {
       <span className="w-1.5 h-1.5 rounded-full bg-white opacity-80" />
       {status}
     </span>
-  )
+  );
 }
 
 // ---- Main Component ----
 
 export default function Planning() {
-  const { householdId } = useOnboardingStore()
-  const hid = householdId ?? 'demo-household'
+  const user = useAuthStore((s) => s.user);
+  const hid = user?.householdId ?? "demo-household";
 
-  const [weekStart, setWeekStart] = useState(() => getMondayOfWeek(new Date()))
-  const [weekPlan, setWeekPlan] = useState<WeekPlan | null>(null)
-  const [groceryList, setGroceryList] = useState<GroceryList | null>(null)
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected')
-  const [loading, setLoading] = useState(true)
-  const [listLoading, setListLoading] = useState(false)
-  const [pendingSync, setPendingSync] = useState(0)
+  const [weekStart, setWeekStart] = useState(() => getMondayOfWeek(new Date()));
+  const [weekPlan, setWeekPlan] = useState<WeekPlan | null>(null);
+  const [groceryList, setGroceryList] = useState<GroceryList | null>(null);
+  const [connectionStatus, setConnectionStatus] =
+    useState<ConnectionStatus>("disconnected");
+  const [loading, setLoading] = useState(true);
+  const [listLoading, setListLoading] = useState(false);
+  const [pendingSync, setPendingSync] = useState(0);
+  const [weeklyCost, setWeeklyCost] = useState<number | null>(null);
 
-  const startStr = formatDate(weekStart)
+  const startStr = formatDate(weekStart);
 
   // Load weekly plan
   const loadPlan = useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const data = await apiClient.plans.getWeek(hid, startStr)
-      setWeekPlan(data)
+      const data = await apiClient.plans.getWeek(hid, startStr);
+      setWeekPlan(data as WeekPlan);
     } catch {
-      setWeekPlan({ plan: { id: 'offline' }, entries: [] })
+      setWeekPlan({ plan: { id: "offline" }, entries: [] });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [hid, startStr])
+  }, [hid, startStr]);
 
   useEffect(() => {
-    loadPlan()
-  }, [loadPlan])
+    loadPlan();
+  }, [loadPlan]);
+
+  // whenever plan loads recalc cost
+  useEffect(() => {
+    if (!weekPlan || !hid) return;
+    Promise.all(
+      weekPlan.entries.map((e) =>
+        apiClient.recipes.cost(e.recipeId, hid).then((r) => r.costPerServing),
+      ),
+    )
+      .then((arr) => {
+        setWeeklyCost(arr.reduce((a, b) => a + b, 0));
+      })
+      .catch(() => {});
+  }, [weekPlan, hid]);
 
   // Socket.io setup
   useEffect(() => {
-    const unsub = onConnectionChange(setConnectionStatus)
-    joinHousehold(hid)
+    const unsub = onConnectionChange(setConnectionStatus);
+    joinHousehold(hid);
 
-    const socket = getSocket()
+    const socket = getSocket();
     const onAssign = (data: { entry: unknown }) => {
       setWeekPlan((prev) => {
-        if (!prev) return prev
-        return { ...prev, entries: [...prev.entries, data.entry as MealEntry] }
-      })
-    }
+        if (!prev) return prev;
+        return { ...prev, entries: [...prev.entries, data.entry as MealEntry] };
+      });
+    };
     const onRemove = (data: { entryId: string }) => {
       setWeekPlan((prev) => {
-        if (!prev) return prev
+        if (!prev) return prev;
         return {
           ...prev,
           entries: prev.entries.filter((e) => e.id !== data.entryId),
-        }
-      })
-    }
-    socket.on('plan:recipe:assign', onAssign)
-    socket.on('plan:recipe:remove', onRemove)
+        };
+      });
+    };
+    socket.on("plan:recipe:assign", onAssign);
+    socket.on("plan:recipe:remove", onRemove);
 
     return () => {
-      unsub()
-      leaveHousehold(hid)
-      socket.off('plan:recipe:assign', onAssign)
-      socket.off('plan:recipe:remove', onRemove)
-    }
-  }, [hid])
+      unsub();
+      leaveHousehold(hid);
+      socket.off("plan:recipe:assign", onAssign);
+      socket.off("plan:recipe:remove", onRemove);
+    };
+  }, [hid]);
 
   const handleGenerateList = async () => {
-    if (!weekPlan) return
-    setListLoading(true)
+    if (!weekPlan) return;
+    setListLoading(true);
     try {
-      const generated = (await apiClient.plans.generateList(weekPlan.plan.id)) as GroceryList
-      setGroceryList(generated)
+      const generated = (await apiClient.plans.generateList(
+        weekPlan.plan.id,
+      )) as GroceryList;
+      setGroceryList(generated);
     } catch {
       // queue for sync when offline
-      await enqueue('generate-list', { planId: weekPlan.plan.id })
-      setPendingSync((n) => n + 1)
+      await enqueue("generate-list", { planId: weekPlan.plan.id });
+      setPendingSync((n) => n + 1);
     } finally {
-      setListLoading(false)
+      setListLoading(false);
     }
-  }
+  };
 
   const handleToggleItem = async (item: GroceryListItem) => {
-    if (!groceryList) return
+    if (!groceryList) return;
     // optimistic update
     setGroceryList((prev) => {
-      if (!prev) return prev
+      if (!prev) return prev;
       return {
         ...prev,
         items: prev.items.map((i) =>
-          i.id === item.id ? { ...i, checked: !i.checked } : i
+          i.id === item.id ? { ...i, checked: !i.checked } : i,
         ),
-      }
-    })
+      };
+    });
     try {
-      await apiClient.lists.toggleItem(groceryList.id, item.id)
+      await apiClient.lists.toggleItem(groceryList.id, item.id);
     } catch {
-      await enqueue('toggle-item', { listId: groceryList.id, itemId: item.id })
-      setPendingSync((n) => n + 1)
+      await enqueue("toggle-item", { listId: groceryList.id, itemId: item.id });
+      setPendingSync((n) => n + 1);
     }
-  }
+  };
 
   const handleCopyWeek = async () => {
-    const nextWeek = formatDate(addDays(weekStart, 7))
+    const nextWeek = formatDate(addDays(weekStart, 7));
     try {
-      await apiClient.plans.copyWeek(hid, startStr, nextWeek)
+      await apiClient.plans.copyWeek(hid, startStr, nextWeek);
       // Navigate to next week
-      setWeekStart(addDays(weekStart, 7))
+      setWeekStart(addDays(weekStart, 7));
     } catch {
-      await enqueue('copy-week', { from: startStr, to: nextWeek })
-      setPendingSync((n) => n + 1)
+      await enqueue("copy-week", { from: startStr, to: nextWeek });
+      setPendingSync((n) => n + 1);
     }
-  }
+  };
 
   const handleFlushQueue = async () => {
-    await flushQueue()
-    setPendingSync(0)
-  }
+    await flushQueue();
+    setPendingSync(0);
+  };
 
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+
+  // Darius's 5pm Rule: after 5pm, show "Tonight" strip at top
+  const now = new Date();
+  const todayStr = formatDate(now);
+  const isPast5pm = now.getHours() >= 17;
+  const tonightEntry = isPast5pm
+    ? weekPlan?.entries.find(
+        (e) => e.date === todayStr && e.mealType === "dinner",
+      )
+    : null;
 
   return (
     <div data-testid="planning-page" className="max-w-4xl mx-auto py-6 px-4">
+      {/* Darius 5pm Rule: Tonight strip */}
+      {tonightEntry && (
+        <div
+          className="bg-green-600 text-white rounded-xl p-4 mb-6 flex items-center gap-3"
+          data-testid="tonight-strip"
+        >
+          <span className="text-2xl">🍽️</span>
+          <div>
+            <div className="text-xs font-medium opacity-80">Tonight</div>
+            <div className="font-semibold text-lg">
+              {tonightEntry.recipeTitle ?? "Dinner"}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <h1 className="text-2xl font-bold text-stone-900">Meal Plan</h1>
         <div className="flex items-center gap-3">
+          <span data-testid="budget-summary" className="text-sm text-stone-600">
+            {weeklyCost != null
+              ? `Weekly cost: $${weeklyCost.toFixed(2)}`
+              : "Weekly budget: $0.00"}
+          </span>
           <ConnectionBadge status={connectionStatus} />
+          {/* quick link into fridge-clearance for current household */}
+          {hid && (
+            <Link
+              to={`/fridge-clearance?householdId=${hid}`}
+              data-testid="fridge-clearance-link"
+              className="px-3 py-1.5 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600"
+            >
+              What can I make?
+            </Link>
+          )}
           {pendingSync > 0 && (
             <button
               data-testid="sync-queue-badge"
@@ -220,11 +279,15 @@ export default function Planning() {
           &larr; Prev
         </button>
         <span className="text-sm font-medium text-stone-700">
-          {weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} &ndash;{' '}
-          {addDays(weekStart, 6).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
+          {weekStart.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          })}{" "}
+          &ndash;{" "}
+          {addDays(weekStart, 6).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
           })}
         </span>
         <button
@@ -244,7 +307,10 @@ export default function Planning() {
 
       {/* Weekly calendar grid */}
       {loading ? (
-        <div className="text-center py-12 text-stone-400" data-testid="loading-indicator">
+        <div
+          className="text-center py-12 text-stone-400"
+          data-testid="loading-indicator"
+        >
           Loading plan...
         </div>
       ) : (
@@ -255,13 +321,18 @@ export default function Planning() {
           >
             <thead>
               <tr>
-                <th className="w-24 py-2 text-left text-stone-500 font-normal">Meal</th>
+                <th className="w-24 py-2 text-left text-stone-500 font-normal">
+                  Meal
+                </th>
                 {weekDays.map((d) => (
                   <th
                     key={formatDate(d)}
                     className="py-2 text-center text-stone-700 font-medium min-w-[100px]"
                   >
-                    {d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' })}
+                    {d.toLocaleDateString("en-US", {
+                      weekday: "short",
+                      day: "numeric",
+                    })}
                   </th>
                 ))}
               </tr>
@@ -269,12 +340,14 @@ export default function Planning() {
             <tbody>
               {MEAL_TYPES.map((meal) => (
                 <tr key={meal} className="border-t border-stone-100">
-                  <td className="py-3 pr-3 text-stone-500 capitalize font-medium">{meal}</td>
+                  <td className="py-3 pr-3 text-stone-500 capitalize font-medium">
+                    {meal}
+                  </td>
                   {weekDays.map((d) => {
-                    const dateStr = formatDate(d)
+                    const dateStr = formatDate(d);
                     const entry = weekPlan?.entries.find(
-                      (e) => e.date === dateStr && e.mealType === meal
-                    )
+                      (e) => e.date === dateStr && e.mealType === meal,
+                    );
                     return (
                       <td key={dateStr} className="py-2 px-1">
                         {entry ? (
@@ -290,7 +363,7 @@ export default function Planning() {
                           </div>
                         )}
                       </td>
-                    )
+                    );
                   })}
                 </tr>
               ))}
@@ -309,7 +382,7 @@ export default function Planning() {
             disabled={listLoading || !weekPlan}
             className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50"
           >
-            {listLoading ? 'Generating...' : 'Generate from plan'}
+            {listLoading ? "Generating..." : "Generate from plan"}
           </button>
         </div>
 
@@ -325,17 +398,23 @@ export default function Planning() {
                   data-testid={`item-check-${item.id}`}
                   className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
                     item.checked
-                      ? 'border-green-500 bg-green-500'
-                      : 'border-stone-300'
+                      ? "border-green-500 bg-green-500"
+                      : "border-stone-300"
                   }`}
                 >
                   {item.checked && (
-                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <svg
+                      className="w-3 h-3 text-white"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
                       <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
                     </svg>
                   )}
                 </button>
-                <span className={`text-sm ${item.checked ? 'line-through text-stone-400' : 'text-stone-800'}`}>
+                <span
+                  className={`text-sm ${item.checked ? "line-through text-stone-400" : "text-stone-800"}`}
+                >
                   {item.name}
                 </span>
               </li>
@@ -361,5 +440,5 @@ export default function Planning() {
         </div>
       )}
     </div>
-  )
+  );
 }

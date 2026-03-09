@@ -1,227 +1,206 @@
-import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
-import { apiClient } from '../lib/api-client'
-import type { FulfillmentLink, FulfillmentProvider, SponsoredItem } from '@staged/types'
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { apiClient } from "@/lib/api-client";
 
-interface Bundle {
-  name: string
-  description: string
+/**
+ * Fulfillment (Deliver Me This) page.
+ *
+ * Shows the week's unchecked grocery list items.
+ * User can deselect items they already have.
+ * Primary CTA: Send to Instacart (IDP deep-link via API).
+ * Attribution disclosure: required by Instacart IDP terms.
+ * Fallback: Copy list to clipboard.
+ */
+
+interface GroceryItem {
+  id: string;
+  name: string;
+  checked: boolean;
 }
 
 export default function FulfillmentPage() {
-  const [searchParams] = useSearchParams()
-  const listId = searchParams.get('listId')
+  const [searchParams] = useSearchParams();
+  const listId = searchParams.get("listId");
 
-  const [providers, setProviders] = useState<FulfillmentProvider[]>([])
-  const [selectedProvider, setSelectedProvider] = useState<FulfillmentProvider>('instacart')
+  const [items, setItems] = useState<GroceryItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [linkLoading, setLinkLoading] = useState(false);
+  const [instacartUrl, setInstacartUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
-  const [linkData, setLinkData] = useState<FulfillmentLink | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [note, setNote] = useState<string | null>(null)
-
-  // fetch available providers once
+  // Load grocery list items if listId provided
   useEffect(() => {
-    if (!listId) return
-    apiClient.fulfillment
-      .getProviders()
-      .then((res) => {
-        setProviders(res.providers)
-        if (res.default) setSelectedProvider(res.default as FulfillmentProvider)
-        else if (res.providers.includes('instacart')) {
-          setSelectedProvider('instacart')
-        }
-      })
-      .catch(() => {
-        // ignore; providers list is optional
-      })
-  }, [listId])
-
-  // whenever listId or selectedProvider changes, regenerate link
-  useEffect(() => {
-    if (!listId) return
-    setLoading(true)
-    setError(null)
-    setNote(null)
-    apiClient.fulfillment
-      .generateLink(listId, selectedProvider)
+    if (!listId) return;
+    setLoading(true);
+    apiClient.lists
+      .get(listId)
       .then((data) => {
-        setLinkData(data)
-        if (data.provider && data.provider !== selectedProvider) {
-          setNote(`Using available provider: ${data.provider.replace('-', ' ')}`)
-          setSelectedProvider(data.provider as FulfillmentProvider)
-        }
+        setItems((data.items as GroceryItem[]).filter((i) => !i.checked));
       })
-      .catch((err: unknown) =>
-        setError(err instanceof Error ? err.message : 'Failed to generate link')
-      )
-      .finally(() => setLoading(false))
-  }, [listId, selectedProvider])
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false));
+  }, [listId]);
+
+  const selectedItems = items.filter((i) => !i.checked);
+
+  const handleToggle = (id: string) => {
+    setItems((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, checked: !i.checked } : i)),
+    );
+  };
+
+  const handleSendToInstacart = async () => {
+    if (!listId || selectedItems.length === 0) return;
+    setLinkLoading(true);
+    setError(null);
+    try {
+      const data = await apiClient.fulfillment.generateInstacartLink(listId);
+      const url = (data as { url?: string }).url;
+      if (url) {
+        setInstacartUrl(url);
+        window.open(url, "_blank", "noopener,noreferrer");
+      } else {
+        setError(
+          "Could not generate Instacart link. Please copy the list manually.",
+        );
+      }
+    } catch {
+      setError(
+        "Failed to reach fulfillment service. Please copy the list manually.",
+      );
+    } finally {
+      setLinkLoading(false);
+    }
+  };
+
+  const handleCopyList = async () => {
+    const text = selectedItems.map((i) => `- ${i.name}`).join("\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback for browsers that block clipboard
+      prompt("Copy this grocery list:", text);
+    }
+  };
 
   return (
-    <div data-testid="fulfillment-page" className="max-w-lg mx-auto py-8 px-4">
-      {/* Header */}
-      <div className="mb-6">
-        <Link
-          to="/planning"
-          className="text-sm text-stone-400 hover:text-stone-600 mb-3 inline-block"
-        >
-          &larr; Back to plan
-        </Link>
-        <h1 className="text-2xl font-bold text-stone-900">Deliver Me This</h1>
-        <p className="text-sm text-stone-500 mt-1">
-          Review your grocery order before heading to Instacart.
-        </p>
-      </div>
+    <div className="max-w-2xl mx-auto py-6 px-4" data-testid="fulfillment-page">
+      <h1 className="text-2xl font-bold text-stone-900 mb-2">
+        Deliver Me This
+      </h1>
+      <p className="text-stone-500 text-sm mb-6">
+        Review your grocery list and send it to Instacart.
+      </p>
 
-      {/* Attribution disclosure -- always visible */}
+      {/* Attribution disclosure -- required by Instacart IDP terms */}
       <div
+        className="bg-stone-50 border border-stone-200 rounded-lg px-4 py-3 mb-6 text-xs text-stone-500"
         data-testid="attribution-disclosure"
-        className="mb-6 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800"
       >
-        <strong>Affiliate disclosure:</strong> Staged earns a small commission on qualifying
-        Instacart orders placed through this link. Your price is the same.
+        St&agrave;ged earns a commission on orders placed through Instacart.
       </div>
 
-      {/* Provider selector */}
-      {providers.length > 0 && (
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-stone-700 mb-1">
-            Order with
-          </label>
-          <select
-            data-testid="provider-select"
-            value={selectedProvider}
-            onChange={(e) =>
-              setSelectedProvider(e.target.value as FulfillmentProvider)
-            }
-            className="mt-1 block w-full rounded-md border-stone-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-          >
-            {providers.map((p) => (
-              <option key={p} value={p}>
-                {p.replace('-', ' ')}
-              </option>
-            ))}
-          </select>
+      {/* Grocery items */}
+      {loading ? (
+        <div className="text-stone-400 text-sm py-8 text-center animate-pulse">
+          Loading grocery list...
         </div>
-      )}
-
-      {note && (
+      ) : items.length === 0 ? (
         <div
-          data-testid="provider-note"
-          className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800"
-        >
-          {note}
-        </div>
-      )}
-
-      {/* No list selected */}
-      {!listId && (
-        <div
-          data-testid="no-list-message"
           className="text-center py-12 text-stone-400"
+          data-testid="fulfillment-empty"
         >
-          <p className="text-sm">No grocery list selected.</p>
-          <Link
-            to="/planning"
-            className="mt-3 inline-block text-sm text-green-600 hover:underline"
-          >
-            Go to your meal plan
-          </Link>
+          <p className="mb-2">No grocery items yet.</p>
+          <p className="text-sm">
+            Assign recipes to your weekly plan to generate a list.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-2 mb-6" data-testid="grocery-items">
+          {items.map((item) => (
+            <label
+              key={item.id}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-colors ${
+                item.checked
+                  ? "border-stone-200 bg-stone-50 opacity-50"
+                  : "border-stone-200 bg-white hover:border-green-300"
+              }`}
+              data-testid={`grocery-item-${item.id}`}
+            >
+              <input
+                type="checkbox"
+                checked={!item.checked}
+                onChange={() => handleToggle(item.id)}
+                className="w-4 h-4 rounded border-stone-300 text-green-600 focus:ring-green-500"
+              />
+              <span
+                className={`text-sm ${item.checked ? "line-through text-stone-400" : "text-stone-700"}`}
+              >
+                {item.name}
+              </span>
+            </label>
+          ))}
         </div>
       )}
 
-      {/* Loading */}
-      {listId && loading && (
-        <div
-          data-testid="fulfillment-loading"
-          className="text-center py-12 text-stone-400 text-sm"
-        >
-          Preparing your Instacart order...
-        </div>
+      {/* Selected count */}
+      {items.length > 0 && (
+        <p className="text-sm text-stone-500 mb-4">
+          {selectedItems.length} of {items.length} items selected
+        </p>
       )}
 
-      {/* Error */}
+      {/* Error message */}
       {error && (
         <div
-          data-testid="fulfillment-error"
-          className="p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700"
+          className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm"
+          role="alert"
         >
-          <strong>Could not generate link:</strong> {error}
+          {error}
         </div>
       )}
 
-      {/* Link data ready */}
-      {linkData && (
-        <>
-          {/* Smart Bundle upsells */}
-          {linkData.bundles && linkData.bundles.length > 0 && (
-            <div className="mb-6">
-              <h2 className="text-sm font-semibold text-stone-700 mb-2">
-                Smart Bundle suggestions
-              </h2>
-              <ul
-                data-testid="bundle-list"
-                className="space-y-2"
-              >
-                {linkData.bundles.map((bundle) => (
-                  <li
-                    key={bundle.name}
-                    data-testid="bundle-item"
-                    className="p-3 bg-green-50 border border-green-200 rounded-xl"
-                  >
-                    <p className="text-sm font-medium text-green-900">{bundle.name}</p>
-                    <p className="text-xs text-green-700 mt-0.5">{bundle.description}</p>
-                  </li>
-                ))}
-              </ul>
-            </div>
+      {/* CTAs */}
+      <div className="space-y-3">
+        <button
+          onClick={handleSendToInstacart}
+          disabled={linkLoading || selectedItems.length === 0}
+          className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-stone-200 disabled:text-stone-400 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+          data-testid="send-to-instacart"
+        >
+          {linkLoading ? (
+            "Generating link..."
+          ) : (
+            <>
+              <span>🛒</span>
+              Send to Instacart
+            </>
           )}
+        </button>
 
-          {/* Partner attribution metadata */}
-          <div
-            data-testid="partner-attribution"
-            className="mb-6 text-xs text-stone-400"
-          >
-            Affiliate ID: {linkData.attribution.affiliate}
-          </div>
-
-          {/* Sponsored placements (Chicory) */}
-          {linkData.sponsoredItems && linkData.sponsoredItems.length > 0 && (
-            <div className="mb-6">
-              <h2 className="text-sm font-semibold text-stone-700 mb-2">
-                Sponsored items
-              </h2>
-              <ul className="space-y-2" data-testid="sponsored-list">
-                {linkData.sponsoredItems.map((item) => (
-                  <li
-                    key={item.name + item.brand}
-                    className="p-2 bg-yellow-50 border border-yellow-200 rounded"
-                  >
-                    <p className="text-sm font-medium text-yellow-800">
-                      {item.name} ({item.brand}) - ${item.price.toFixed(2)}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* CTA */}
+        {instacartUrl && (
           <a
-            data-testid="instacart-cta"
-            href={linkData.url}
+            href={instacartUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="block w-full py-4 rounded-xl bg-green-600 text-white font-semibold text-center text-lg hover:bg-green-700 active:scale-95 transition-transform"
+            className="block w-full py-2.5 text-center text-sm text-orange-600 hover:text-orange-700 border border-orange-200 rounded-lg"
           >
-            Order with {linkData.provider.replace('-', ' ')}
+            Open Instacart link again &rarr;
           </a>
-          <p className="text-center text-xs text-stone-400 mt-2">
-            Opens {linkData.provider.replace('-', ' ')} in a new tab
-          </p>
-        </>
-      )}
+        )}
+
+        <button
+          onClick={handleCopyList}
+          disabled={selectedItems.length === 0}
+          className="w-full py-2.5 border border-stone-300 hover:bg-stone-50 disabled:opacity-50 text-stone-700 text-sm font-medium rounded-lg transition-colors"
+          data-testid="copy-list"
+        >
+          {copied ? "Copied!" : "Copy list to clipboard"}
+        </button>
+      </div>
     </div>
-  )
+  );
 }

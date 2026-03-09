@@ -432,7 +432,7 @@ Use the `mcp__claude-in-chrome__*` tools for browser verification after each maj
 
 ---
 
-### Task 8: Weekly planning page `[BD:STG-268]`
+### Task 8: Weekly planning page `[BD:stg-6ol]` [x]
 
 - **Type**: feature
 - **Do**: Rebuild `apps/web/src/routes/Planning.tsx`.
@@ -466,7 +466,7 @@ Use the `mcp__claude-in-chrome__*` tools for browser verification after each maj
 
 ---
 
-### Task 9: Pantry page `[BD:STG-269]`
+### Task 9: Pantry page `[BD:stg-4gc]` [x]
 
 - **Type**: feature
 - **Do**: Rebuild or create `apps/web/src/routes/Pantry.tsx`.
@@ -493,7 +493,7 @@ Use the `mcp__claude-in-chrome__*` tools for browser verification after each maj
 
 ---
 
-### Task 10: Fulfillment (Deliver Me This) page `[BD:STG-270]`
+### Task 10: Fulfillment (Deliver Me This) page `[BD:stg-1ux]` [x]
 
 - **Type**: feature
 - **Do**: Rebuild `apps/web/src/routes/FulfillmentPage.tsx`.
