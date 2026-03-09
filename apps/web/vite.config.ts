@@ -15,12 +15,23 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
+      includeAssets: ["favicon.svg", "icon.svg"],
       manifest: {
         name: "Stàged",
         short_name: "Stàged",
         description: "Free, offline-first household meal coordination",
-        theme_color: "#ffffff",
-        icons: [],
+        theme_color: "#16a34a",
+        background_color: "#ffffff",
+        display: "standalone",
+        start_url: "/",
+        icons: [
+          {
+            src: "/icon.svg",
+            sizes: "any",
+            type: "image/svg+xml",
+            purpose: "any maskable",
+          },
+        ],
       },
       workbox: {
         runtimeCaching: [
