@@ -74,7 +74,7 @@ export default function Login() {
       className="min-h-screen flex items-center justify-center bg-stone-50 px-4"
       data-testid="login-page"
     >
-      <div className="w-full max-w-[440px]">
+      <div className="w-full max-w-110">
         {/* Brand */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-stone-900 tracking-tight mb-2">

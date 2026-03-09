@@ -327,7 +327,7 @@ export default function Planning() {
                 {weekDays.map((d) => (
                   <th
                     key={formatDate(d)}
-                    className="py-2 text-center text-stone-700 font-medium min-w-[100px]"
+                    className="py-2 text-center text-stone-700 font-medium min-w-25"
                   >
                     {d.toLocaleDateString("en-US", {
                       weekday: "short",
@@ -396,7 +396,7 @@ export default function Planning() {
                 <button
                   onClick={() => handleToggleItem(item)}
                   data-testid={`item-check-${item.id}`}
-                  className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                  className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${
                     item.checked
                       ? "border-green-500 bg-green-500"
                       : "border-stone-300"
