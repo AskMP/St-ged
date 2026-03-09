@@ -48,6 +48,12 @@
 - **Instruction**: The tables may exist but Drizzle has no record of them. Options: (1) drop and recreate the DB with `docker compose down -v && docker compose up -d`, then migrate fresh; (2) manually insert the migration hash into `drizzle.__drizzle_migrations`. Option 1 is safer in dev. Never option 1 in prod.
 - **Context**: Rescue-00 -- Auth.js had already created tables before Drizzle schema was written.
 
+## Sign: Auth.js initAuthConfig basePath must be set explicitly
+
+- **Trigger**: When using @hono/auth-js with NEXTAUTH_URL or AUTH_URL set to a root URL (no path, e.g. http://localhost:3000)
+- **Instruction**: Always set `basePath: "/api/auth"` in authConfig explicitly. Without it, setEnvDefaults reads NEXTAUTH_URL path ("/" for root URLs) and basePath becomes "/". This makes parseActionAndProviderId extract "api" from /api/auth/signin -- not a valid Auth.js action -- causing Auth() to return "Bad request." 400 for ALL authHandler requests. Also scope initAuth() to only the Auth.js action paths, not "app.use('\*', initAuth())".
+- **Context**: Rescue-05 -- browser signup 400 investigation; curl masked the bug because curl tests didn't follow the full signup->signin browser flow.
+
 ## Sign: rescue-02 is verification-only -- no new features
 
 - **Trigger**: When executing prd-rescue-02-verify.md tasks
