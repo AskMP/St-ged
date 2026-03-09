@@ -19,6 +19,7 @@ import pantryRouter from "./routes/pantry";
 import plansRouter from "./routes/plans";
 import potluckRouter from "./routes/potluck";
 import recipesRouter from "./routes/recipes";
+import usersRouter from "./routes/users";
 
 export const app = new Hono();
 
@@ -112,6 +113,7 @@ app.get("/health", async (c) => {
   }
 });
 
+app.route("/api/users", usersRouter);
 app.route("/api/recipes", recipesRouter);
 app.route("/api/batch-prep", batchRouter);
 app.route("/api/households", householdsRouter);

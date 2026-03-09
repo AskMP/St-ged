@@ -142,6 +142,29 @@ export async function changeMemberRole(
   return { success: true };
 }
 
+export async function getUserHouseholds(userId: string) {
+  const rows = await db
+    .select({
+      id: households.id,
+      name: households.name,
+      inviteCode: households.inviteCode,
+      role: householdMembers.role,
+      activeHouseholdId: users.householdId,
+    })
+    .from(householdMembers)
+    .innerJoin(households, eq(householdMembers.householdId, households.id))
+    .innerJoin(users, eq(householdMembers.userId, users.id))
+    .where(eq(householdMembers.userId, userId));
+
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    inviteCode: r.inviteCode,
+    role: r.role as "owner" | "member" | "guest",
+    isActive: r.id === r.activeHouseholdId,
+  }));
+}
+
 export async function getHouseholdByInvite(code: string) {
   const [h] = await db
     .select()
