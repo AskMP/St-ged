@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import type { HouseholdMembership } from "@staged/types";
 import { useAuthStore } from "@/lib/auth-store";
 import { apiClient } from "@/lib/api-client";
 
@@ -10,7 +11,52 @@ export default function Settings() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const clear = useAuthStore((s) => s.clear);
+  const setUser = useAuthStore((s) => s.setUser);
   const [signingOut, setSigningOut] = useState(false);
+  const [memberships, setMemberships] = useState<HouseholdMembership[]>([]);
+  const [joinCode, setJoinCode] = useState("");
+  const [switching, setSwitching] = useState<string | null>(null);
+
+  useEffect(() => {
+    apiClient.users
+      .getHouseholds()
+      .then((r) => setMemberships(r.households))
+      .catch(() => {});
+  }, [user?.householdId]);
+
+  const handleSwitch = async (householdId: string) => {
+    setSwitching(householdId);
+    try {
+      const res = await apiClient.users.switchHousehold(householdId);
+      // Preserve skillLevel from current user since switch endpoint doesn't return it
+      setUser({
+        id: res.user.id,
+        email: res.user.email ?? "",
+        name: res.user.name ?? "",
+        householdId: res.user.householdId,
+        role: res.user.role,
+        skillLevel: user?.skillLevel ?? "beginner",
+      });
+      const r = await apiClient.users.getHouseholds();
+      setMemberships(r.households);
+    } catch {
+      // ignore
+    } finally {
+      setSwitching(null);
+    }
+  };
+
+  const handleJoin = async () => {
+    if (!joinCode.trim()) return;
+    try {
+      await apiClient.households.join(joinCode.trim());
+      setJoinCode("");
+      const r = await apiClient.users.getHouseholds();
+      setMemberships(r.households);
+    } catch {
+      // ignore
+    }
+  };
 
   const handleSignout = async () => {
     setSigningOut(true);
@@ -96,6 +142,72 @@ export default function Settings() {
               </button>
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Your Households section */}
+      <section
+        className="bg-white rounded-2xl border border-stone-200 mb-4 overflow-hidden"
+        data-testid="households-section"
+      >
+        <div className="px-5 py-4 border-b border-stone-100">
+          <h2 className="text-sm font-semibold text-stone-500 uppercase tracking-wide">
+            Your Households
+          </h2>
+        </div>
+        <div className="px-5 py-4 space-y-3">
+          {memberships.map((m) => (
+            <div
+              key={m.id}
+              className="flex items-center justify-between"
+              data-testid={`household-row-${m.id}`}
+            >
+              <div className="min-w-0">
+                <p className="font-medium text-stone-900 truncate">{m.name}</p>
+                <p className="text-xs text-stone-400 capitalize">{m.role}</p>
+              </div>
+              {m.isActive ? (
+                <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full font-medium">
+                  Active
+                </span>
+              ) : (
+                <button
+                  onClick={() => handleSwitch(m.id)}
+                  disabled={switching === m.id}
+                  className="text-xs px-3 py-1 border border-stone-200 rounded-full text-stone-700 hover:bg-stone-50 disabled:opacity-50"
+                  data-testid={`switch-household-${m.id}`}
+                >
+                  {switching === m.id ? "Switching..." : "Switch"}
+                </button>
+              )}
+            </div>
+          ))}
+          {/* Join with invite code */}
+          <div className="flex gap-2 pt-2 border-t border-stone-100">
+            <input
+              type="text"
+              value={joinCode}
+              onChange={(e) => setJoinCode(e.target.value)}
+              placeholder="Invite code..."
+              className="flex-1 border border-stone-200 rounded-lg px-3 py-1.5 text-sm"
+              data-testid="join-code-input"
+            />
+            <button
+              onClick={handleJoin}
+              className="px-3 py-1.5 bg-stone-100 text-stone-700 rounded-lg text-sm hover:bg-stone-200"
+              data-testid="join-household-btn"
+            >
+              Join
+            </button>
+          </div>
+          {/* Create new household */}
+          <button
+            onClick={() => navigate("/onboarding")}
+            className="text-sm text-green-600 hover:text-green-700 font-medium"
+            data-testid="create-household-btn"
+          >
+            + Create new household
+          </button>
         </div>
       </section>
 

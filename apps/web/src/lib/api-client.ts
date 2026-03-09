@@ -1,4 +1,4 @@
-import type { StagedEvent } from "@staged/types";
+import type { HouseholdMembership, StagedEvent } from "@staged/types";
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
@@ -61,11 +61,38 @@ export const apiClient = {
       });
     },
   },
+  users: {
+    getHouseholds() {
+      return request<{ households: HouseholdMembership[] }>(
+        "/api/users/me/households",
+      );
+    },
+    switchHousehold(householdId: string) {
+      return request<{
+        user: {
+          id: string;
+          email: string;
+          name: string;
+          householdId: string | null;
+          role: string;
+        };
+      }>("/api/users/me/active-household", {
+        method: "PATCH",
+        body: JSON.stringify({ householdId }),
+      });
+    },
+  },
   households: {
     create(name: string) {
       return request<{ id: string; name: string }>("/api/households", {
         method: "POST",
         body: JSON.stringify({ name }),
+      });
+    },
+    join(code: string) {
+      return request<{ success: boolean }>("/api/households/join", {
+        method: "POST",
+        body: JSON.stringify({ code }),
       });
     },
     addCost(
