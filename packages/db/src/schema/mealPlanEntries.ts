@@ -1,4 +1,4 @@
-import { pgTable, uuid, date, integer } from "drizzle-orm/pg-core";
+import { pgTable, uuid, date, integer, text } from "drizzle-orm/pg-core";
 import { mealPlans } from "./mealPlans";
 import { recipes } from "./recipes";
 
@@ -12,4 +12,5 @@ export const mealPlanEntries = pgTable("meal_plan_entries", {
     .notNull()
     .references(() => recipes.id, { onDelete: "cascade" }),
   servingsOverride: integer("servings_override"),
+  mealType: text("meal_type"),
 });
