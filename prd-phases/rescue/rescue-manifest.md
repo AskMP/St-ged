@@ -129,9 +129,9 @@ Discovered Task in the PRD's Discovered Tasks section, add a guardrail note to
 
 | Field                | Value                                                                           |
 | -------------------- | ------------------------------------------------------------------------------- |
-| Last completed PRD   | rescue-07                                                                       |
-| Current rescue phase | IN PROGRESS -- Phase R8 Multi-Household                                         |
-| Progress             | 7 / 9 rescue PRDs complete                                                      |
+| Last completed PRD   | rescue-08                                                                       |
+| Current rescue phase | IN PROGRESS -- Phase R9 UX Gaps                                                 |
+| Progress             | 8 / 9 rescue PRDs complete                                                      |
 | Foundation status    | GREEN -- all 5 core services migrated to Drizzle; data persists across restarts |
 
 ---
@@ -177,7 +177,7 @@ Discovered Task in the PRD's Discovered Tasks section, add a guardrail note to
 
 ### Phase R8: Multi-Household Support
 
-- [ ] **rescue-08** | `prd-phases/rescue/prd-rescue-08-household-multi.md` | Multi-household create/join/switch; JWT refresh on household change; fix HouseholdOps stale ID; household switcher in Settings | status: pending | requires: rescue-07 |
+- [x] **rescue-08** | `prd-phases/rescue/prd-rescue-08-household-multi.md` | Multi-household create/join/switch; JWT refresh on household change; fix HouseholdOps stale ID; household switcher in Settings | status: complete | requires: rescue-07 |
 
 ### Phase R9: UX Gaps
 
@@ -190,6 +190,6 @@ Discovered Task in the PRD's Discovered Tasks section, add a guardrail note to
 | Metric            | Count |
 | ----------------- | ----- |
 | Total rescue PRDs | 9     |
-| Complete          | 7     |
-| Pending           | 2     |
+| Complete          | 8     |
+| Pending           | 1     |
 | Blocked           | 0     |

@@ -1,3 +1,14 @@
+## Rescue Iteration 10 -- rescue-08 Task 1: GET /api/users/me/households
+
+- **Status**: Complete
+- **BD task**: stg-ssx (closed)
+- **Commit**: e395689
+- **Files**: `apps/api/src/services/household-service.ts`, `apps/api/src/routes/users.ts`, `apps/api/src/index.ts`
+- **Patterns discovered**: Created dedicated users.ts router (not auth.ts) to keep route separation clean. getUserHouseholds uses triple JOIN (householdMembers + households + users) to get isActive flag in one query.
+- **Time**: 2026-03-09
+
+---
+
 ## Rescue Iteration 9 -- rescue-07 Complete: All 9 tasks done
 
 - **Status**: Complete
