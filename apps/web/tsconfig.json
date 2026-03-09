@@ -5,8 +5,19 @@
     "rootDir": "./src",
     "composite": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "paths": {
+      "@/*": ["apps/web/src/*"],
+      "@staged/db": ["packages/db/dist/index"],
+      "@staged/types": ["packages/types/dist/index"],
+      "@staged/usda": ["packages/usda/dist/index"]
+    }
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "tests"]
+  "exclude": ["node_modules", "dist", "tests"],
+  "references": [
+    { "path": "../../packages/types" },
+    { "path": "../../packages/db" },
+    { "path": "../../packages/usda" }
+  ]
 }
