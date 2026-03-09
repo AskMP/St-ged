@@ -1,158 +1,95 @@
-import { render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { vi } from 'vitest'
-import FulfillmentPage from '../../src/routes/FulfillmentPage'
-import * as apiClient from '../../src/lib/api-client'
+/**
+ * FulfillmentPage unit tests -- Deliver Me This flow.
+ *
+ * Tests the rebuilt fulfillment page which:
+ * - Shows grocery list items (loaded by listId)
+ * - Has attribution disclosure (IDP requirement)
+ * - Has "Send to Instacart" CTA
+ * - Has "Copy list" fallback
+ */
+import { render, screen, waitFor } from "@testing-library/react";
+import { vi } from "vitest";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import FulfillmentPage from "../../src/routes/FulfillmentPage";
 
-vi.mock('../../src/lib/api-client', () => ({
+vi.mock("../../src/lib/api-client", () => ({
   apiClient: {
+    lists: {
+      get: vi.fn(),
+    },
     fulfillment: {
-      generateLink: vi.fn(),
-      getProviders: vi.fn(),
+      generateInstacartLink: vi.fn(),
     },
   },
-}))
+}));
 
-const mockLinkData = {
-  provider: 'instacart',
-  url: 'https://www.instacart.com/store/1234/cart?affiliate_id=test&items=pasta',
-  token: 'tok-abc',
-  attribution: { affiliate: 'affiliate-test' },
-  bundles: [
-    { name: 'Premium Spices Pack', description: 'Add gourmet spices for 5% off' },
-  ],
-  sponsoredItems: [
-    { name: 'Organic Honey', brand: 'ChicoryFarm', price: 6.99 },
-  ],
-}
+import * as apiModule from "../../src/lib/api-client";
 
-function renderFulfillment(search = '?listId=list-1') {
+const mockListData = {
+  id: "list-1",
+  name: "Week list",
+  items: [
+    { id: "i1", name: "pasta 200g", checked: false },
+    { id: "i2", name: "zucchini", checked: false },
+  ],
+};
+
+function renderFulfillment(search = "?listId=list-1") {
   return render(
     <MemoryRouter initialEntries={[`/fulfillment${search}`]}>
       <Routes>
         <Route path="/fulfillment" element={<FulfillmentPage />} />
         <Route path="/planning" element={<div>Planning</div>} />
       </Routes>
-    </MemoryRouter>
-  )
+    </MemoryRouter>,
+  );
 }
 
 beforeEach(() => {
-  vi.mocked(apiClient.apiClient.fulfillment.generateLink).mockResolvedValue(mockLinkData)
-  vi.mocked(apiClient.apiClient.fulfillment.getProviders).mockResolvedValue({ providers: ['instacart'], default: 'instacart' })
-})
+  vi.mocked(apiModule.apiClient.lists.get).mockResolvedValue(mockListData);
+  vi.mocked(
+    apiModule.apiClient.fulfillment.generateInstacartLink,
+  ).mockResolvedValue({ url: "https://instacart.com/test" });
+});
 
-  it('sets selected provider based on default from server', async () => {
-    renderFulfillment()
-    await waitFor(() => {
-      const select = screen.getByTestId('provider-select') as HTMLSelectElement
-      expect(select.value).toBe('instacart')
-    })
-  })
-    await waitFor(() => {
-      expect(screen.getByTestId('fulfillment-page')).toBeInTheDocument()
-    })
-    expect(screen.getByText('Deliver Me This')).toBeInTheDocument()
-  })
+describe("FulfillmentPage", () => {
+  it("renders the fulfillment page with testid", () => {
+    renderFulfillment();
+    expect(screen.getByTestId("fulfillment-page")).toBeInTheDocument();
+  });
 
-  it('always shows attribution disclosure', async () => {
-    renderFulfillment()
-    expect(screen.getByTestId('attribution-disclosure')).toBeInTheDocument()
-    expect(screen.getByText(/Affiliate disclosure/)).toBeInTheDocument()
-  })
+  it("always shows attribution disclosure", () => {
+    renderFulfillment();
+    expect(screen.getByTestId("attribution-disclosure")).toBeInTheDocument();
+    expect(screen.getByText(/earns a commission/i)).toBeInTheDocument();
+  });
 
-  it('shows no-list message when listId is absent', async () => {
-    renderFulfillment('')
-    expect(screen.getByTestId('no-list-message')).toBeInTheDocument()
-  })
+  it("shows Send to Instacart button", () => {
+    renderFulfillment();
+    expect(screen.getByTestId("send-to-instacart")).toBeInTheDocument();
+  });
 
-  it('shows loading state while fetching', async () => {
-    vi.mocked(apiClient.apiClient.fulfillment.generateLink).mockImplementation(
-      () => new Promise(() => {}) // never resolves
-    )
-    renderFulfillment()
-    expect(screen.getByTestId('fulfillment-loading')).toBeInTheDocument()
-  })
+  it("shows copy list button", () => {
+    renderFulfillment();
+    expect(screen.getByTestId("copy-list")).toBeInTheDocument();
+  });
 
-  it('renders bundle suggestions after link is generated', async () => {
-    renderFulfillment()
+  it("loads and shows grocery items when listId provided", async () => {
+    renderFulfillment();
     await waitFor(() => {
-      expect(screen.getByTestId('bundle-list')).toBeInTheDocument()
-    })
-    expect(screen.getByText('Premium Spices Pack')).toBeInTheDocument()
-    expect(screen.getByText('Add gourmet spices for 5% off')).toBeInTheDocument()
-  })
+      expect(screen.getByTestId("grocery-item-i1")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("grocery-item-i2")).toBeInTheDocument();
+  });
 
-  it('shows provider selector and reacts to change', async () => {
-    // initially getProviders returns ['instacart'] via beforeEach
-    renderFulfillment()
-    await waitFor(() => {
-      expect(screen.getByTestId('provider-select')).toBeInTheDocument()
-    })
-    const select = screen.getByTestId('provider-select') as HTMLSelectElement
-    expect(select.value).toBe('instacart')
-    // simulate a fallback from server
-    const fallbackData = { ...mockLinkData, provider: 'kroger' }
-    vi.mocked(apiClient.apiClient.fulfillment.generateLink).mockResolvedValue(fallbackData)
-    select.value = 'kroger'
-    select.dispatchEvent(new Event('change', { bubbles: true }))
-    await waitFor(() => {
-      expect(apiClient.apiClient.fulfillment.generateLink).toHaveBeenCalledWith('my-list-42', 'kroger')
-    })
-    await waitFor(() => {
-      expect(screen.getByTestId('provider-note')).toHaveTextContent('Using available provider: kroger')
-    })
-    // selectedProvider should sync to returned provider
-    expect(select.value).toBe('kroger')
-  })
+  it("shows empty state when no listId provided", () => {
+    renderFulfillment("");
+    // no listId -> items never loaded -> shows empty state
+    expect(screen.queryByTestId("grocery-item-i1")).not.toBeInTheDocument();
+  });
 
-  it('renders sponsored items if present', async () => {
-    const linkWithSponsored = {
-      ...mockLinkData,
-      sponsoredItems: [{ name: 'Organic Honey', brand: 'ChicoryFarm', price: 6.99 }],
-    }
-    vi.mocked(apiClient.apiClient.fulfillment.generateLink).mockResolvedValue(linkWithSponsored)
-    renderFulfillment()
-    await waitFor(() => {
-      expect(screen.getByTestId('sponsored-list')).toBeInTheDocument()
-    })
-    expect(screen.getByText(/Organic Honey/)).toBeInTheDocument()
-    expect(screen.getByText(/ChicoryFarm/)).toBeInTheDocument()
-  })
-
-  it('renders partner attribution metadata', async () => {
-    renderFulfillment()
-    await waitFor(() => {
-      expect(screen.getByTestId('partner-attribution')).toBeInTheDocument()
-    })
-    expect(screen.getByText(/affiliate-test/)).toBeInTheDocument()
-  })
-
-  it('renders Instacart CTA with correct href', async () => {
-    renderFulfillment()
-    await waitFor(() => {
-      expect(screen.getByTestId('instacart-cta')).toBeInTheDocument()
-    })
-    const cta = screen.getByTestId('instacart-cta') as HTMLAnchorElement
-    expect(cta.href).toContain('instacart.com')
-    expect(cta.target).toBe('_blank')
-  })
-
-  it('shows error when API call fails', async () => {
-    vi.mocked(apiClient.apiClient.fulfillment.generateLink).mockRejectedValue(
-      new Error('Network error')
-    )
-    renderFulfillment()
-    await waitFor(() => {
-      expect(screen.getByTestId('fulfillment-error')).toBeInTheDocument()
-    })
-    expect(screen.getByText(/Network error/)).toBeInTheDocument()
-  })
-
-  it('calls generateLink with the correct listId', async () => {
-    renderFulfillment('?listId=my-list-42')
-    await waitFor(() => {
-      expect(apiClient.apiClient.fulfillment.generateLink).toHaveBeenCalledWith('my-list-42', 'instacart')
-    })
-  })
-})
+  it("shows Deliver Me This heading", () => {
+    renderFulfillment();
+    expect(screen.getByText(/Deliver Me This/i)).toBeInTheDocument();
+  });
+});

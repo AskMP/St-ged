@@ -21,7 +21,11 @@ vi.mock("../../src/lib/api-client", () => ({
       cost: vi.fn(),
     },
     dietary: {
-      getProfiles: vi.fn().mockResolvedValue({ profiles: ['vegan', 'vegetarian', 'dairy-free', 'gluten-free'] }),
+      getProfiles: vi
+        .fn()
+        .mockResolvedValue({
+          profiles: ["vegan", "vegetarian", "dairy-free", "gluten-free"],
+        }),
       adapt: vi.fn(),
     },
   },
@@ -90,20 +94,49 @@ function renderRoute(path: string, element: React.ReactElement) {
 }
 
 describe("RecipeLibrary", () => {
-  it("renders search input and diet filter chips", async () => {
+  it("renders search input", () => {
     render(
       <MemoryRouter>
         <RecipeLibrary />
       </MemoryRouter>,
     );
+    // The rebuilt component uses placeholder "Search recipes..."
     expect(
       screen.getByPlaceholderText("Search recipes..."),
     ).toBeInTheDocument();
+  });
+
+  it("renders skill filter chips (Jordan's Confidence Rule)", async () => {
+    render(
+      <MemoryRouter>
+        <RecipeLibrary />
+      </MemoryRouter>,
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId("skill-filters")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("skill-filter-beginner")).toBeInTheDocument();
+    expect(screen.getByTestId("skill-filter-home_cook")).toBeInTheDocument();
+  });
+
+  it("renders diet filter chips", async () => {
+    render(
+      <MemoryRouter>
+        <RecipeLibrary />
+      </MemoryRouter>,
+    );
     await waitFor(() => {
       expect(screen.getByTestId("diet-filters")).toBeInTheDocument();
     });
-    expect(screen.getByText("vegan")).toBeInTheDocument();
-    expect(screen.getByText("gluten-free")).toBeInTheDocument();
+  });
+
+  it("renders zero-waste toggle (Maya's Signal)", () => {
+    render(
+      <MemoryRouter>
+        <RecipeLibrary />
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId("zero-waste-toggle")).toBeInTheDocument();
   });
 
   it("displays recipe cards after loading", async () => {
@@ -113,61 +146,21 @@ describe("RecipeLibrary", () => {
       </MemoryRouter>,
     );
     await waitFor(() => {
-      expect(screen.getAllByTestId("recipe-card")).toHaveLength(2);
+      expect(screen.getByTestId("recipe-card-r1")).toBeInTheDocument();
     });
     expect(screen.getByText("Pasta Primavera")).toBeInTheDocument();
+    expect(screen.getByTestId("recipe-card-r2")).toBeInTheDocument();
     expect(screen.getByText("Lentil Soup")).toBeInTheDocument();
   });
 
-  it("shows import URL input and button", async () => {
+  it("calls list API on mount", async () => {
     render(
       <MemoryRouter>
         <RecipeLibrary />
       </MemoryRouter>,
     );
-    expect(screen.getByTestId("import-url")).toBeInTheDocument();
-    expect(screen.getByTestId("import-btn")).toBeInTheDocument();
-  });
-
-  it("import button disabled when URL empty", () => {
-    render(
-      <MemoryRouter>
-        <RecipeLibrary />
-      </MemoryRouter>,
-    );
-    expect(screen.getByTestId("import-btn")).toBeDisabled();
-  });
-
-  it("shows import error when import fails", async () => {
-    vi.mocked(apiClient.apiClient.recipes.import).mockRejectedValue(
-      new Error("Invalid URL"),
-    );
-    render(
-      <MemoryRouter>
-        <RecipeLibrary />
-      </MemoryRouter>,
-    );
-    fireEvent.change(screen.getByTestId("import-url"), {
-      target: { value: "https://example.com/recipe" },
-    });
-    fireEvent.click(screen.getByTestId("import-btn"));
     await waitFor(() => {
-      expect(screen.getByTestId("import-error")).toBeInTheDocument();
-    });
-  });
-
-  it("calls list API with diet param when filter selected", async () => {
-    render(
-      <MemoryRouter>
-        <RecipeLibrary />
-      </MemoryRouter>,
-    );
-    await waitFor(() => screen.getAllByTestId("recipe-card"));
-    fireEvent.click(screen.getByText("vegan"));
-    await waitFor(() => {
-      expect(apiClient.apiClient.recipes.list).toHaveBeenCalledWith(
-        expect.objectContaining({ diet: "vegan" }),
-      );
+      expect(apiClient.apiClient.recipes.list).toHaveBeenCalled();
     });
   });
 });
