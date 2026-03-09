@@ -63,7 +63,7 @@ export const apiClient = {
   },
   households: {
     create(name: string) {
-      return request<{ id: string; name: string }>("/households", {
+      return request<{ id: string; name: string }>("/api/households", {
         method: "POST",
         body: JSON.stringify({ name }),
       });
@@ -73,13 +73,13 @@ export const apiClient = {
       total: number,
       weights?: Record<string, number>,
     ) {
-      return request<any>(`/households/${householdId}/costs`, {
+      return request<any>(`/api/households/${householdId}/costs`, {
         method: "POST",
         body: JSON.stringify({ total, weights }),
       });
     },
     costHistory(householdId: string) {
-      return request<any>(`/households/${householdId}/costs`);
+      return request<any>(`/api/households/${householdId}/costs`);
     },
     setRotation(
       householdId: string,
@@ -87,24 +87,24 @@ export const apiClient = {
       members: string[],
       startDate?: string,
     ) {
-      return request<any>(`/households/${householdId}/rotation`, {
+      return request<any>(`/api/households/${householdId}/rotation`, {
         method: "POST",
         body: JSON.stringify({ frequency, members, startDate }),
       });
     },
     getRotation(householdId: string) {
-      return request<any>(`/households/${householdId}/rotation`);
+      return request<any>(`/api/households/${householdId}/rotation`);
     },
     getRotationAssignments(householdId: string, weeks = 4) {
       return request<any>(
-        `/households/${householdId}/rotation/assignments?weeks=${weeks}`,
+        `/api/households/${householdId}/rotation/assignments?weeks=${weeks}`,
       );
     },
   },
   pantry: {
     applyTemplate(householdId: string, template: string) {
       return request<unknown>(
-        `/households/${householdId}/pantry/templates/${template}`,
+        `/api/households/${householdId}/pantry/templates/${template}`,
         {
           method: "POST",
         },
@@ -114,40 +114,40 @@ export const apiClient = {
   fridgeClearance: {
     getSuggestions(householdId: string) {
       return request<unknown>(
-        `/fridge-clearance?householdId=${encodeURIComponent(householdId)}`,
+        `/api/fridge-clearance?householdId=${encodeURIComponent(householdId)}`,
       );
     },
   },
   plans: {
     getWeek(householdId: string, start: string) {
       return request<{ plan: { id: string }; entries: unknown[] }>(
-        `/households/${householdId}/plans/week?start=${encodeURIComponent(start)}`,
+        `/api/households/${householdId}/plans/week?start=${encodeURIComponent(start)}`,
       );
     },
     addEntry(
       planId: string,
       data: { recipeId: string; date: string; mealType: string },
     ) {
-      return request<unknown>(`/plans/${planId}/entries`, {
+      return request<unknown>(`/api/plans/${planId}/entries`, {
         method: "POST",
         body: JSON.stringify(data),
       });
     },
     removeEntry(planId: string, entryId: string) {
       return request<{ success: boolean }>(
-        `/plans/${planId}/entries/${entryId}`,
+        `/api/plans/${planId}/entries/${entryId}`,
         {
           method: "DELETE",
         },
       );
     },
     generateList(planId: string) {
-      return request<unknown>(`/plans/${planId}/generate-list`, {
+      return request<unknown>(`/api/plans/${planId}/generate-list`, {
         method: "POST",
       });
     },
     copyWeek(householdId: string, from: string, to: string) {
-      return request<unknown>(`/households/${householdId}/plans/copy`, {
+      return request<unknown>(`/api/households/${householdId}/plans/copy`, {
         method: "POST",
         body: JSON.stringify({ from, to }),
       });
@@ -155,45 +155,48 @@ export const apiClient = {
   },
   lists: {
     getAll(householdId: string) {
-      return request<unknown[]>(`/households/${householdId}/lists`);
+      return request<unknown[]>(`/api/households/${householdId}/lists`);
     },
     get(listId: string) {
       return request<{ id: string; name?: string; items: unknown[] }>(
-        `/lists/${listId}`,
+        `/api/lists/${listId}`,
       );
     },
     addItem(listId: string, name: string) {
-      return request<unknown>(`/lists/${listId}/items`, {
+      return request<unknown>(`/api/lists/${listId}/items`, {
         method: "POST",
         body: JSON.stringify({ name }),
       });
     },
     toggleItem(listId: string, itemId: string) {
-      return request<unknown>(`/lists/${listId}/items/${itemId}`, {
+      return request<unknown>(`/api/lists/${listId}/items/${itemId}`, {
         method: "PATCH",
       });
     },
     deleteItem(listId: string, itemId: string) {
-      return request<{ success: boolean }>(`/lists/${listId}/items/${itemId}`, {
-        method: "DELETE",
-      });
+      return request<{ success: boolean }>(
+        `/api/lists/${listId}/items/${itemId}`,
+        {
+          method: "DELETE",
+        },
+      );
     },
   },
   fulfillment: {
     // returns available providers; may be empty if service doesn't support selection
     getProviders() {
-      return request<{ providers: string[] }>("/fulfillment/providers");
+      return request<{ providers: string[] }>("/api/fulfillment/providers");
     },
     // generic link generation with optional provider choice
     generateLink(listId: string, provider?: string) {
-      return request<any>("/fulfillment/link", {
+      return request<any>("/api/fulfillment/link", {
         method: "POST",
         body: JSON.stringify({ listId, provider }),
       });
     },
     // legacy helper kept for compatibility
     generateInstacartLink(listId: string) {
-      return request<any>("/fulfillment/instacart-link", {
+      return request<any>("/api/fulfillment/instacart-link", {
         method: "POST",
         body: JSON.stringify({ listId }),
       });
@@ -245,19 +248,19 @@ export const apiClient = {
   },
   potluck: {
     create(event: Partial<Record<string, any>>) {
-      return request<any>("/potluck", {
+      return request<any>("/api/potluck", {
         method: "POST",
         body: JSON.stringify(event),
       });
     },
     list() {
-      return request<{ events: any[] }>("/potluck");
+      return request<{ events: any[] }>("/api/potluck");
     },
     get(id: string) {
-      return request<any>(`/potluck/${id}`);
+      return request<any>(`/api/potluck/${id}`);
     },
     claim(eventId: string, slotId: string, guestName: string) {
-      return request<any>(`/potluck/${eventId}/slots/${slotId}/claim`, {
+      return request<any>(`/api/potluck/${eventId}/slots/${slotId}/claim`, {
         method: "POST",
         body: JSON.stringify({ guestName }),
       });
@@ -265,25 +268,25 @@ export const apiClient = {
   },
   events: {
     list() {
-      return request<{ events: StagedEvent[] }>("/events");
+      return request<{ events: StagedEvent[] }>("/api/events");
     },
     get(id: string) {
-      return request<StagedEvent>(`/events/${id}`);
+      return request<StagedEvent>(`/api/events/${id}`);
     },
     create(body: { title: string; priceCents: number }) {
-      return request<{ event: StagedEvent }>("/events", {
+      return request<{ event: StagedEvent }>("/api/events", {
         method: "POST",
         body: JSON.stringify(body),
       });
     },
     book(eventId: string) {
-      return request<any>(`/events/${eventId}/book`, { method: "POST" });
+      return request<any>(`/api/events/${eventId}/book`, { method: "POST" });
     },
   },
   batchPrep: {
     combine(recipeIds: string[]) {
       return request<{ items: any[]; sequence: string[] }>(
-        "/batch-prep/combine",
+        "/api/batch-prep/combine",
         {
           method: "POST",
           body: JSON.stringify({ recipeIds }),
@@ -293,20 +296,20 @@ export const apiClient = {
   },
   dietary: {
     adapt(recipeId: string, profile: string) {
-      return request<any>("/dietary/adapt", {
+      return request<any>("/api/dietary/adapt", {
         method: "POST",
         body: JSON.stringify({ recipeId, profile }),
       });
     },
     getProfiles() {
-      return request<{ profiles: string[] }>("/dietary/profiles");
+      return request<{ profiles: string[] }>("/api/dietary/profiles");
     },
     explain(substitution: {
       original: string;
       replacement: string;
       reason: string;
     }) {
-      return request<{ explanation: string }>("/dietary/explain", {
+      return request<{ explanation: string }>("/api/dietary/explain", {
         method: "POST",
         body: JSON.stringify({ substitution }),
       });
