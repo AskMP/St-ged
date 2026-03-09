@@ -29,6 +29,11 @@ vi.mock("../../src/lib/api-client", () => ({
       cost: vi
         .fn()
         .mockResolvedValue({ costPerServing: 0, pantryDeduction: 0 }),
+      // list is called on mount for recipe autocomplete
+      list: vi.fn().mockResolvedValue([
+        { id: "r-pasta", title: "Pasta Primavera" },
+        { id: "r-lentil", title: "Red Lentil Soup" },
+      ]),
     },
   },
 }));

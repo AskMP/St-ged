@@ -1,5 +1,5 @@
 import type { GroceryListItem } from "@staged/types";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/lib/auth-store";
@@ -80,6 +80,11 @@ export default function Planning() {
   // Inline meal entry
   const [activeCell, setActiveCell] = useState<ActiveCell | null>(null);
   const [mealInput, setMealInput] = useState("");
+  // Recipe autocomplete (Quinn's planning flow)
+  const allRecipesRef = useRef<{ id: string; title: string }[]>([]);
+  const [recipeSuggestions, setRecipeSuggestions] = useState<
+    { id: string; title: string }[]
+  >([]);
 
   const startStr = formatDate(weekStart);
 
@@ -146,6 +151,69 @@ export default function Planning() {
     };
   }, [hid]);
 
+  // Fetch all recipes for autocomplete on mount
+  useEffect(() => {
+    if (!hid) return;
+    apiClient.recipes
+      .list({})
+      .then((data) => {
+        allRecipesRef.current = (data as { id: string; title: string }[]).map(
+          (r) => ({ id: r.id, title: r.title }),
+        );
+      })
+      .catch(() => {});
+  }, [hid]);
+
+  const handleMealInputChange = (value: string) => {
+    setMealInput(value);
+    if (!value.trim()) {
+      setRecipeSuggestions([]);
+      return;
+    }
+    const lower = value.toLowerCase();
+    const matches = allRecipesRef.current
+      .filter((r) => r.title.toLowerCase().includes(lower))
+      .slice(0, 5);
+    setRecipeSuggestions(matches);
+  };
+
+  const handlePickRecipe = async (recipe: { id: string; title: string }) => {
+    if (!weekPlan || !activeCell) return;
+    setMealInput("");
+    setActiveCell(null);
+    setRecipeSuggestions([]);
+    try {
+      const entry = (await apiClient.plans.addEntry(weekPlan.plan.id, {
+        recipeId: recipe.id,
+        date: activeCell.date,
+        mealType: activeCell.mealType,
+      })) as { id: string };
+      setWeekPlan((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          entries: [
+            ...prev.entries,
+            {
+              id: entry.id,
+              recipeId: recipe.id,
+              recipeTitle: recipe.title,
+              date: activeCell.date,
+              mealType: activeCell.mealType,
+            } as MealEntry,
+          ],
+        };
+      });
+    } catch {
+      await enqueue("add-meal", {
+        planId: weekPlan.plan.id,
+        recipeId: recipe.id,
+        ...activeCell,
+      });
+      setPendingSync((n) => n + 1);
+    }
+  };
+
   const handleGenerateList = async () => {
     if (!weekPlan) return;
     setListLoading(true);
@@ -205,6 +273,7 @@ export default function Planning() {
     const title = mealInput.trim();
     setMealInput("");
     setActiveCell(null);
+    setRecipeSuggestions([]);
 
     try {
       // Create a stub recipe with the given title
@@ -411,27 +480,56 @@ export default function Planning() {
                     return (
                       <td key={dateStr} className="py-2 px-1">
                         {isActive ? (
-                          <div className="flex gap-1">
-                            <input
-                              autoFocus
-                              value={mealInput}
-                              onChange={(e) => setMealInput(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") handleAddMeal();
-                                if (e.key === "Escape") {
-                                  setActiveCell(null);
-                                  setMealInput("");
+                          <div className="relative">
+                            <div className="flex gap-1">
+                              <input
+                                autoFocus
+                                value={mealInput}
+                                onChange={(e) =>
+                                  handleMealInputChange(e.target.value)
                                 }
-                              }}
-                              placeholder="Meal name"
-                              className="flex-1 min-w-0 text-xs border border-green-400 rounded px-1.5 py-1 focus:outline-none"
-                            />
-                            <button
-                              onClick={handleAddMeal}
-                              className="text-xs bg-green-600 text-white px-1.5 rounded"
-                            >
-                              +
-                            </button>
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    setRecipeSuggestions([]);
+                                    handleAddMeal();
+                                  }
+                                  if (e.key === "Escape") {
+                                    setActiveCell(null);
+                                    setMealInput("");
+                                    setRecipeSuggestions([]);
+                                  }
+                                }}
+                                placeholder="Meal name"
+                                className="flex-1 min-w-0 text-xs border border-green-400 rounded px-1.5 py-1 focus:outline-none"
+                              />
+                              <button
+                                onClick={() => {
+                                  setRecipeSuggestions([]);
+                                  handleAddMeal();
+                                }}
+                                className="text-xs bg-green-600 text-white px-1.5 rounded"
+                              >
+                                +
+                              </button>
+                            </div>
+                            {recipeSuggestions.length > 0 && (
+                              <ul
+                                data-testid="meal-search-dropdown"
+                                className="absolute z-10 left-0 right-0 top-full mt-0.5 bg-white border border-stone-200 rounded-lg shadow-sm text-xs overflow-hidden"
+                              >
+                                {recipeSuggestions.map((r) => (
+                                  <li key={r.id}>
+                                    <button
+                                      onMouseDown={(e) => e.preventDefault()}
+                                      onClick={() => handlePickRecipe(r)}
+                                      className="w-full text-left px-2 py-1.5 hover:bg-green-50 text-stone-800"
+                                    >
+                                      {r.title}
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
                           </div>
                         ) : entry ? (
                           <div

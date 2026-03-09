@@ -162,7 +162,7 @@ implementation:
 
 ---
 
-### Task 3: Fix planning add-meal to search existing recipes `[BD:STG-322]`
+### Task 3: Fix planning add-meal to search existing recipes `[BD:stg-xn7]` ✓
 
 - **Type**: task
 - **Priority**: P1
