@@ -1,3 +1,21 @@
+## Rescue Iteration 5 -- rescue-05: Debug and fix browser signup 400 error
+
+- **Status**: Complete (AUTH-007 fix applied)
+- **Branch**: stg-unj/rescue-00-schema
+- **Files changed**:
+  - `apps/api/src/index.ts` -- removed `app.use("*", initAuth())`, added scoped AUTH_PATHS loop
+  - `apps/api/src/lib/auth.ts` -- added `basePath: "/api/auth"` to authConfig
+  - `apps/web/tests/e2e/onboarding.spec.ts` -- added live-API regression test (gated on API_URL)
+  - `CORRECTION_LOG.md` -- appended rescue-05 row
+  - `.claude/known-errors.md` -- added AUTH section with initAuthConfig intercept gotcha
+- **Root cause found**: Stop-on-Spin triggered (cookie curl returned 201, not 400). Actual root cause was two-layered: (1) `NEXTAUTH_URL=http://localhost:3000` caused `basePath = "/"` via `setEnvDefaults`, so `parseActionAndProviderId` extracted `"api"` from `/api/auth/signin` -- not a valid Auth.js action -- returning `"Bad request." 400`. (2) `app.use("*", initAuth())` was too broad. Fix: scoped initAuth to AUTH_PATHS + set `basePath: "/api/auth"` explicitly.
+- **Verification**: curl with Cookie header -> 201; /api/auth/signin -> 302 (was 400); 79 unit tests pass
+- **Discovered task**: stg-w7t (P1 bug) -- auto-signin after signup redirects to Auth.js HTML page; callbackUrl cross-origin validation blocks session establishment. Separate from rescue-05 scope.
+- **Tests**: 79 passed, 5 skipped, 0 failing (baseline maintained)
+- **Time**: 2026-03-09
+
+---
+
 ## Rescue Iteration 4 -- rescue-03: Service Layer Migration (raw SQL -> Drizzle ORM)
 
 - **Status**: Complete

@@ -19,6 +19,11 @@ export const authConfig: AuthConfig = {
   // disable CSRF for API consumers so that the client can POST credentials
   // directly without fetching a token first
   skipCSRFCheck: skipCSRFCheck,
+  // AUTH-007: set basePath so Auth.js correctly parses /api/auth/* action URLs.
+  // Without this, NEXTAUTH_URL="http://localhost:3000" causes basePath to default
+  // to "/" (the URL path), and Auth.js extracts "api" as the action from
+  // /api/auth/signin -- not a valid action -- returning "Bad request." 400.
+  basePath: "/api/auth",
   adapter: DrizzleAdapter(db),
   providers: [
     Google({

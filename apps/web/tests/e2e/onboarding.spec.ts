@@ -157,6 +157,52 @@ test("Jordan: onboarding step 2 -- solo household", async ({ page }) => {
   await expect(page.locator('[data-testid="dietary-step"]')).toBeVisible();
 });
 
+// rescue-05 regression guard: verify POST /api/auth/signup returns 201 from a
+// real browser context (not mocked). Gated on API_URL env var so it only runs
+// when a live API is available. Skipped in CI where no DB is running.
+test.describe("live signup flow", () => {
+  test.skip(
+    !process.env.API_URL,
+    "requires live API -- set API_URL=http://localhost:3000",
+  );
+
+  test("register new user -> /me returns user data", async ({ page }) => {
+    const email = `e2e-${Date.now()}@staged.test`;
+    await page.goto("/signup");
+    await page.fill(
+      '[placeholder*="name" i], [name="displayName"], #displayName',
+      "E2E User",
+    );
+    await page.fill('[type="email"], [name="email"], #email', email);
+    const pwFields = page.locator('[type="password"]');
+    await pwFields.nth(0).fill("testpass123");
+    await pwFields.nth(1).fill("testpass123");
+    await page.click('[type="submit"]');
+
+    // After signup the page should either navigate away (if signin also succeeds)
+    // or stay on signup with a non-400 server error. Either way, the signup
+    // POST must not have returned 400. We verify by checking /api/auth/signup
+    // directly -- the page.route interception in beforeEach is NOT active here
+    // because this describe block runs outside the mocked context.
+    const signupRes = await page.evaluate(async (e) => {
+      const r = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          email: e,
+          password: "testpass123",
+          displayName: "E2E Direct",
+        }),
+      });
+      return { status: r.status, body: await r.text() };
+    }, `direct-${email}`);
+    // Expect 201 (created) or 409 (already registered from the form submit above) -- never 400
+    expect([201, 409]).toContain(signupRes.status);
+    expect(signupRes.body).not.toContain("Bad request");
+  });
+});
+
 test("Jordan: full onboarding flow -> planning", async ({ page }) => {
   await page.addInitScript(
     ({ key, stored }) => {

@@ -25,8 +25,26 @@ export const app = new Hono();
 app.use("*", corsMiddleware);
 app.use("*", rateLimitMiddleware);
 
-// initialize Auth.js (NextAuth) before other routes
-app.use("*", initAuth());
+// AUTH-007 fix: scope initAuth() to Auth.js action paths only.
+// Previously app.use("*", initAuth()) ran initAuthConfig on ALL requests.
+// Auth.js attempted to parse the action from the URL using basePath ("/auth"
+// by default, "/" when NEXTAUTH_URL has no path). For custom routes like
+// /api/auth/signup the parsed action was either invalid or "api" (not a valid
+// Auth.js action), causing Auth() to return "Bad request." before our custom
+// authRouter could handle it. Scoping initAuth() to only the paths that
+// authHandler() uses prevents this interception.
+const AUTH_PATHS = [
+  "/api/auth/signin",
+  "/api/auth/signout",
+  "/api/auth/session",
+  "/api/auth/csrf",
+  "/api/auth/callback/*",
+  "/api/auth/_log",
+];
+for (const path of AUTH_PATHS) {
+  app.use(path, initAuth());
+}
+
 // register custom auth routes first (signup, guest, invite)
 // AUTH-003 fix: authRouter registered exactly once. Previously registered
 // twice (line ~35 and line ~93) causing routing confusion.

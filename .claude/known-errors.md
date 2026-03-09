@@ -165,3 +165,17 @@ Accumulated from real sessions. Each entry has a trigger, the fix, and the conte
 - **Symptom**: Vitest fails to load `apps/api/src/lib/db.ts` because it imports `@staged/db`
 - **Fix**: Keep `lib/db.ts` schema-free for now. Export only `pool` and `query`. Add schema to drizzle in rescue-03 when path aliases are confirmed working
 - **Context**: Rescue-01 -- adding schema import broke all vitest runs in the api package
+
+---
+
+## AUTH
+
+### Auth.js initAuthConfig("\*") intercepts custom POST routes for cookie-bearing requests
+
+- **Symptom**: Browser POST to `/api/auth/signup` (or any custom `/api/auth/*` route) returns `"Bad request."` 400. curl without cookies returns 201 correctly.
+- **Cause**: Two layered problems:
+  1. `app.use("*", initAuth())` ran `initAuthConfig` on all requests including custom routes.
+  2. `NEXTAUTH_URL=http://localhost:3000` causes Auth.js `setEnvDefaults` to set `basePath = "/"` (the URL path). With basePath `/`, `parseActionAndProviderId` extracts `"api"` from `/api/auth/signin` -- not a valid Auth.js action -- so `Auth()` returns `"Bad request."` 400.
+- **Fix**: (1) Scope `initAuth()` to only Auth.js action paths (`/api/auth/signin`, `/api/auth/signout`, `/api/auth/session`, `/api/auth/csrf`, `/api/auth/callback/*`, `/api/auth/_log`). (2) Set `basePath: "/api/auth"` explicitly in `authConfig` so Auth.js always parses actions correctly regardless of `NEXTAUTH_URL`.
+- **Why curl works**: curl test requests typically don't hit the `/api/auth/signin` auto-signin step that browsers do after signup. Also, older curl tests used `app.use("*", initAuth())` which set the authConfig but `initAuthConfig` is middleware-only -- it doesn't call `Auth()`. The 400 came from `authHandler()` calling `Auth()` with incorrect basePath.
+- **Context**: Rescue-05 -- browser signup 400 investigation
