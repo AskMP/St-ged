@@ -41,7 +41,7 @@ export default function Login() {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes("401") || msg.toLowerCase().includes("unauthorized")) {
-        setError("Incorrect email or password.");
+        setError("no_account");
       } else if (
         msg.includes("fetch") ||
         msg.toLowerCase().includes("network")
@@ -50,19 +50,6 @@ export default function Login() {
       } else {
         setError("Sign in failed. Please try again.");
       }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGuest = async () => {
-    setError(null);
-    setLoading(true);
-    try {
-      await apiClient.auth.guest();
-      navigate("/recipes");
-    } catch {
-      setError("Could not start guest session. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -86,13 +73,28 @@ export default function Login() {
 
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-8">
-          {error && (
+          {error && error !== "no_account" && (
             <div
               className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm"
               role="alert"
               data-testid="login-error"
             >
               {error}
+            </div>
+          )}
+          {error === "no_account" && (
+            <div
+              className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm"
+              role="alert"
+              data-testid="login-error"
+            >
+              Incorrect email or password.{" "}
+              <Link
+                to="/signup"
+                className="font-medium underline hover:text-amber-900"
+              >
+                Create an account?
+              </Link>
             </div>
           )}
 
@@ -147,7 +149,7 @@ export default function Login() {
             </button>
           </form>
 
-          <div className="mt-6 text-center space-y-3">
+          <div className="mt-6 text-center">
             <p className="text-sm text-stone-500">
               Don&apos;t have an account?{" "}
               <Link
@@ -157,16 +159,6 @@ export default function Login() {
                 Sign up
               </Link>
             </p>
-
-            <button
-              type="button"
-              onClick={handleGuest}
-              disabled={loading}
-              className="text-sm text-stone-400 hover:text-stone-600 transition-colors disabled:opacity-50"
-              data-testid="continue-as-guest"
-            >
-              Continue as guest
-            </button>
           </div>
         </div>
       </div>

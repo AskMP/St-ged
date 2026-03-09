@@ -86,7 +86,7 @@ export default function Pantry() {
         expiresAt: addExpiry || undefined,
         householdId,
       };
-      const res = await fetch(`/api/households/${householdId}/pantry`, {
+      const res = await fetch(`/api/households/${householdId}/pantry/items`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -110,7 +110,7 @@ export default function Pantry() {
     if (!householdId) return;
     setItems((prev) => prev.filter((i) => i.id !== itemId));
     try {
-      await fetch(`/api/households/${householdId}/pantry/${itemId}`, {
+      await fetch(`/api/pantry/items/${itemId}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -123,11 +123,40 @@ export default function Pantry() {
     }
   };
 
+  const STARTER_ITEMS = [
+    "Olive oil",
+    "Salt",
+    "Black pepper",
+    "Garlic",
+    "Onions",
+    "Butter",
+    "Eggs",
+    "All-purpose flour",
+    "Sugar",
+    "Soy sauce",
+    "Chicken stock",
+    "Canned tomatoes",
+    "Pasta",
+    "Rice",
+    "Chili flakes",
+    "Cumin",
+    "Honey",
+  ];
+
   const handleStarterPantry = async () => {
     if (!householdId) return;
     try {
-      await apiClient.pantry.applyTemplate(householdId, "basic");
-      // Re-fetch after applying template
+      await Promise.all(
+        STARTER_ITEMS.map((name) =>
+          fetch(`/api/households/${householdId}/pantry/items`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ name, quantity: 1 }),
+          }),
+        ),
+      );
+      // Re-fetch to show newly added items
       const res = await fetch(`/api/households/${householdId}/pantry`, {
         credentials: "include",
       });
@@ -136,7 +165,7 @@ export default function Pantry() {
         setItems(sortByExpiry(data));
       }
     } catch {
-      // Template may not be implemented yet; ignore
+      // best-effort
     }
   };
 

@@ -402,7 +402,17 @@ function PantryStep({
     setLoading(true);
     try {
       if (checked.size > 0 && householdId) {
-        await apiClient.pantry.applyTemplate(householdId, "custom");
+        // Save each checked item individually to the pantry
+        await Promise.all(
+          Array.from(checked).map((name) =>
+            fetch(`/api/households/${householdId}/pantry/items`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({ name, quantity: 1 }),
+            }),
+          ),
+        );
       }
     } catch (err: unknown) {
       // Pantry save is best-effort; don't block onboarding completion

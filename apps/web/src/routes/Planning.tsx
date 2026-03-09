@@ -56,24 +56,13 @@ function addDays(d: Date, n: number): Date {
   return result;
 }
 
-function ConnectionBadge({ status }: { status: ConnectionStatus }) {
-  const colors: Record<ConnectionStatus, string> = {
-    connected: "bg-green-500",
-    connecting: "bg-yellow-400",
-    disconnected: "bg-stone-400",
-  };
-  return (
-    <span
-      data-testid="connection-badge"
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-white ${colors[status]}`}
-    >
-      <span className="w-1.5 h-1.5 rounded-full bg-white opacity-80" />
-      {status}
-    </span>
-  );
-}
-
 // ---- Main Component ----
+
+// Active cell for meal entry
+interface ActiveCell {
+  date: string;
+  mealType: "breakfast" | "lunch" | "dinner";
+}
 
 export default function Planning() {
   const user = useAuthStore((s) => s.user);
@@ -88,6 +77,9 @@ export default function Planning() {
   const [listLoading, setListLoading] = useState(false);
   const [pendingSync, setPendingSync] = useState(0);
   const [weeklyCost, setWeeklyCost] = useState<number | null>(null);
+  // Inline meal entry
+  const [activeCell, setActiveCell] = useState<ActiveCell | null>(null);
+  const [mealInput, setMealInput] = useState("");
 
   const startStr = formatDate(weekStart);
 
@@ -208,6 +200,68 @@ export default function Planning() {
     setPendingSync(0);
   };
 
+  const handleAddMeal = async () => {
+    if (!mealInput.trim() || !weekPlan || !activeCell) return;
+    const title = mealInput.trim();
+    setMealInput("");
+    setActiveCell(null);
+
+    try {
+      // Create a stub recipe with the given title
+      const recipe = (await apiClient.recipes.create({
+        title,
+        servings: 4,
+      })) as { id: string; title: string };
+      // Add to the plan
+      const entry = (await apiClient.plans.addEntry(weekPlan.plan.id, {
+        recipeId: recipe.id,
+        date: activeCell.date,
+        mealType: activeCell.mealType,
+      })) as { id: string };
+      // Optimistic update
+      setWeekPlan((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          entries: [
+            ...prev.entries,
+            {
+              id: entry.id,
+              recipeId: recipe.id,
+              recipeTitle: recipe.title,
+              date: activeCell.date,
+              mealType: activeCell.mealType,
+            } as MealEntry,
+          ],
+        };
+      });
+    } catch {
+      await enqueue("add-meal", {
+        planId: weekPlan.plan.id,
+        title,
+        ...activeCell,
+      });
+      setPendingSync((n) => n + 1);
+    }
+  };
+
+  const handleRemoveMeal = async (entry: MealEntry) => {
+    if (!weekPlan) return;
+    setWeekPlan((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        entries: prev.entries.filter((e) => e.id !== entry.id),
+      };
+    });
+    try {
+      await apiClient.plans.removeEntry(weekPlan.plan.id, entry.id);
+    } catch {
+      // optimistic; re-fetch on error
+      loadPlan();
+    }
+  };
+
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
   // Darius's 5pm Rule: after 5pm, show "Tonight" strip at top
@@ -240,15 +294,18 @@ export default function Planning() {
 
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <h1 className="text-2xl font-bold text-stone-900">Meal Plan</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-stone-900">Meal Plan</h1>
+          {connectionStatus !== "connected" && (
+            <span className="text-xs text-stone-400">{connectionStatus}</span>
+          )}
+        </div>
         <div className="flex items-center gap-3">
           <span data-testid="budget-summary" className="text-sm text-stone-600">
             {weeklyCost != null
               ? `Weekly cost: $${weeklyCost.toFixed(2)}`
-              : "Weekly budget: $0.00"}
+              : null}
           </span>
-          <ConnectionBadge status={connectionStatus} />
-          {/* quick link into fridge-clearance for current household */}
           {hid && (
             <Link
               to={`/fridge-clearance?householdId=${hid}`}
@@ -348,19 +405,57 @@ export default function Planning() {
                     const entry = weekPlan?.entries.find(
                       (e) => e.date === dateStr && e.mealType === meal,
                     );
+                    const isActive =
+                      activeCell?.date === dateStr &&
+                      activeCell?.mealType === meal;
                     return (
                       <td key={dateStr} className="py-2 px-1">
-                        {entry ? (
+                        {isActive ? (
+                          <div className="flex gap-1">
+                            <input
+                              autoFocus
+                              value={mealInput}
+                              onChange={(e) => setMealInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") handleAddMeal();
+                                if (e.key === "Escape") {
+                                  setActiveCell(null);
+                                  setMealInput("");
+                                }
+                              }}
+                              placeholder="Meal name"
+                              className="flex-1 min-w-0 text-xs border border-green-400 rounded px-1.5 py-1 focus:outline-none"
+                            />
+                            <button
+                              onClick={handleAddMeal}
+                              className="text-xs bg-green-600 text-white px-1.5 rounded"
+                            >
+                              +
+                            </button>
+                          </div>
+                        ) : entry ? (
                           <div
                             data-testid="meal-entry"
-                            className="bg-green-50 border border-green-200 rounded-lg p-2 text-xs text-green-800 font-medium leading-snug"
+                            className="bg-green-50 border border-green-200 rounded-lg p-2 text-xs text-green-800 font-medium leading-snug group relative"
                           >
                             {entry.recipeTitle ?? entry.recipeId}
+                            <button
+                              onClick={() => handleRemoveMeal(entry)}
+                              className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-green-400 hover:text-red-500 leading-none text-xs"
+                              aria-label="Remove meal"
+                            >
+                              &times;
+                            </button>
                           </div>
                         ) : (
-                          <div className="h-10 border border-dashed border-stone-200 rounded-lg flex items-center justify-center text-stone-300 text-xs">
+                          <button
+                            className="w-full h-10 border border-dashed border-stone-200 rounded-lg flex items-center justify-center text-stone-300 text-xs hover:border-green-400 hover:text-green-500 transition-colors"
+                            onClick={() =>
+                              setActiveCell({ date: dateStr, mealType: meal })
+                            }
+                          >
                             +
-                          </div>
+                          </button>
                         )}
                       </td>
                     );

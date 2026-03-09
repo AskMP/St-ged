@@ -22,6 +22,7 @@ import EventsPage from "./routes/Events";
 import FridgeClearance from "./routes/FridgeClearance";
 import Potluck from "./routes/Potluck";
 import PotluckDetail from "./routes/PotluckDetail";
+import Settings from "./routes/Settings";
 
 /**
  * Authenticated route wrapper: combines AuthGuard + AppShell.
@@ -163,6 +164,15 @@ export default function App() {
           element={
             <Protected>
               <PotluckDetail />
+            </Protected>
+          }
+        />
+
+        <Route
+          path="/settings"
+          element={
+            <Protected>
+              <Settings />
             </Protected>
           }
         />

@@ -1,4 +1,5 @@
-import { Link, useLocation } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/lib/auth-store";
 import { apiClient } from "@/lib/api-client";
 import { OfflineIndicator } from "./OfflineIndicator";
@@ -100,8 +101,11 @@ function HouseIcon({ active }: { active: boolean }) {
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const clear = useAuthStore((s) => s.clear);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const initials = user?.name
     ? user.name
@@ -113,14 +117,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     : "?";
 
   const handleSignout = async () => {
+    setMenuOpen(false);
     try {
       await apiClient.auth.signout();
     } catch {
-      // best-effort signout
+      // best-effort
     }
     clear();
     window.location.href = "/login";
   };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   return (
     <div className="flex flex-col min-h-screen bg-stone-50">
@@ -133,15 +149,41 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           St&agrave;ged
         </Link>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 relative" ref={menuRef}>
           <button
             className="w-8 h-8 rounded-full bg-green-100 text-green-700 text-xs font-bold flex items-center justify-center hover:bg-green-200 transition-colors"
-            aria-label={`Signed in as ${user?.name ?? "user"}`}
-            title={user?.name ?? ""}
-            onClick={handleSignout}
+            aria-label={`Account menu for ${user?.name ?? "user"}`}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((o) => !o)}
           >
             {initials}
           </button>
+
+          {menuOpen && (
+            <div className="absolute right-0 top-10 w-52 bg-white rounded-xl shadow-lg border border-stone-200 py-1 z-50">
+              <div className="px-4 py-2 border-b border-stone-100">
+                <p className="text-xs font-semibold text-stone-900 truncate">
+                  {user?.name ?? "User"}
+                </p>
+                <p className="text-xs text-stone-500 truncate">{user?.email}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  navigate("/settings");
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
+              >
+                Settings
+              </button>
+              <button
+                onClick={handleSignout}
+                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+              >
+                Sign out
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
