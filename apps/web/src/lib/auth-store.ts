@@ -27,6 +27,10 @@ export const useAuthStore = create<AuthState>()(
       setLoading: (isLoading) => set({ isLoading }),
       clear: () => set({ user: null }),
     }),
-    { name: "staged-auth" },
+    {
+      name: "staged-auth",
+      // Only persist the user object; do not persist functions or loading state
+      partialize: (state) => ({ user: state.user }),
+    },
   ),
 );
