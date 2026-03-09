@@ -142,6 +142,44 @@ export async function changeMemberRole(
   return { success: true };
 }
 
+export async function switchActiveHousehold(
+  userId: string,
+  householdId: string,
+) {
+  // Verify the user is actually a member of the target household
+  const [membership] = await db
+    .select({ role: householdMembers.role })
+    .from(householdMembers)
+    .where(
+      and(
+        eq(householdMembers.userId, userId),
+        eq(householdMembers.householdId, householdId),
+      ),
+    )
+    .limit(1);
+
+  if (!membership) {
+    const err: any = new Error("Not a member of this household");
+    err.status = 403;
+    throw err;
+  }
+
+  await db.update(users).set({ householdId }).where(eq(users.id, userId));
+
+  const [updated] = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      displayName: users.displayName,
+      householdId: users.householdId,
+    })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  return updated;
+}
+
 export async function getUserHouseholds(userId: string) {
   const rows = await db
     .select({
