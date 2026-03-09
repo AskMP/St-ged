@@ -3,7 +3,9 @@ import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
-import { pool, query } from "../lib/db";
+import { pool, query, db } from "../lib/db";
+import { users } from "@staged/db";
+import { eq } from "drizzle-orm";
 import { requireAuth } from "../middleware/auth";
 import {
   createGuestSession,
@@ -34,17 +36,18 @@ authRouter.get("/me", requireAuth, async (c) => {
 
   // Fetch the app-level profile for householdId and displayName.
   // The session object alone does not carry householdId.
-  const rows = await query<{
-    id: string;
-    email: string;
-    display_name: string;
-    household_id: string | null;
-    skill_level: string;
-  }>(
-    "SELECT id, email, display_name, household_id, skill_level FROM users WHERE id = $1",
-    [sessionUser.id],
-  );
-  const profile = rows[0];
+  const [profile] = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      displayName: users.displayName,
+      householdId: users.householdId,
+      skillLevel: users.skillLevel,
+    })
+    .from(users)
+    .where(eq(users.id, sessionUser.id))
+    .limit(1);
+
   if (!profile) {
     throw new HTTPException(404, { message: "Profile not found" });
   }
@@ -52,9 +55,9 @@ authRouter.get("/me", requireAuth, async (c) => {
   return c.json({
     id: profile.id,
     email: profile.email,
-    name: profile.display_name,
-    householdId: profile.household_id,
-    skillLevel: profile.skill_level,
+    name: profile.displayName,
+    householdId: profile.householdId,
+    skillLevel: profile.skillLevel,
     role: sessionUser.role,
   });
 });
@@ -88,45 +91,38 @@ authRouter.post("/signup", async (c) => {
     });
   }
 
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-
-    // ensure not already registered in auth user table
-    const existing = await client.query(
-      'SELECT id FROM "user" WHERE email = $1',
-      [email],
-    );
-    if ((existing.rowCount ?? 0) > 0) {
-      throw new HTTPException(409, { message: "Email already registered" });
-    }
-
-    const hashed = await bcrypt.hash(password, 12);
-    const userId = uuidv4();
-
-    // insert into Auth.js user table (identity record)
-    await client.query(
-      'INSERT INTO "user" (id, email, name, "emailVerified", "createdAt", "updatedAt") VALUES ($1,$2,$3,false,NOW(),NOW())',
-      [userId, email, displayName],
-    );
-
-    // insert app-level profile row with hashed_password.
-    // We do NOT insert into the account table -- credentials are looked up
-    // via users.hashed_password in the authorize callback. See AUTH-002.
-    await client.query(
-      "INSERT INTO users (id, email, display_name, skill_level, dietary_profile, hashed_password) VALUES ($1,$2,$3,$4,$5,$6)",
-      [userId, email, displayName, "beginner", "{}", hashed],
-    );
-
-    await client.query("COMMIT");
-    return c.json({ message: "Account created" }, 201);
-  } catch (err: unknown) {
-    await client.query("ROLLBACK");
-    if (err instanceof HTTPException) throw err;
-    throw err;
-  } finally {
-    client.release();
+  // Check if already registered (raw SQL -- Auth.js "user" table not in Drizzle schema)
+  const existingRows = await query<{ id: string }>(
+    'SELECT id FROM "user" WHERE email = $1',
+    [email],
+  );
+  if (existingRows.length > 0) {
+    throw new HTTPException(409, { message: "Email already registered" });
   }
+
+  const hashed = await bcrypt.hash(password, 12);
+  const userId = uuidv4();
+
+  // Insert into Auth.js "user" table (identity record, not in Drizzle schema)
+  // Raw SQL is intentional here -- Auth.js owns this table structure.
+  await pool.query(
+    'INSERT INTO "user" (id, email, name, "emailVerified", "createdAt", "updatedAt") VALUES ($1,$2,$3,false,NOW(),NOW())',
+    [userId, email, displayName],
+  );
+
+  // Insert app-level profile row with hashed_password via Drizzle.
+  // We do NOT insert into the account table -- credentials are looked up
+  // via users.hashed_password in the authorize callback. See AUTH-002.
+  await db.insert(users).values({
+    id: userId,
+    email,
+    displayName,
+    skillLevel: "beginner",
+    dietaryProfile: {},
+    hashedPassword: hashed,
+  });
+
+  return c.json({ message: "Account created" }, 201);
 });
 
 // create a guest session (public endpoint)
