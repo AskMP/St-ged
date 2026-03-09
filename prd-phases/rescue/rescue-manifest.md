@@ -127,12 +127,12 @@ Discovered Task in the PRD's Discovered Tasks section, add a guardrail note to
 
 ## Current State
 
-| Field                | Value                       |
-| -------------------- | --------------------------- |
-| Last completed PRD   | rescue-02                   |
-| Current rescue phase | 3 (Service Layer Migration) |
-| Progress             | 3 / 5 rescue PRDs complete  |
-| Foundation status    | GREEN                       |
+| Field                | Value                      |
+| -------------------- | -------------------------- |
+| Last completed PRD   | rescue-03                  |
+| Current rescue phase | 4 (UX Rebuild)             |
+| Progress             | 4 / 5 rescue PRDs complete |
+| Foundation status    | GREEN                      |
 
 ---
 
@@ -152,7 +152,7 @@ Discovered Task in the PRD's Discovered Tasks section, add a guardrail note to
 
 ### Phase R3: Service Layer Migration (Quality)
 
-- [ ] **rescue-03** | `prd-phases/rescue/prd-rescue-03-service-layer.md` | Migrate all raw-SQL services to Drizzle ORM type-safe queries | status: pending | requires: rescue-02 |
+- [x] **rescue-03** | `prd-phases/rescue/prd-rescue-03-service-layer.md` | Migrate all raw-SQL services to Drizzle ORM type-safe queries | status: complete | requires: rescue-02 |
 
 ### Phase R4: UX Rebuild (Frontend)
 
@@ -168,6 +168,6 @@ Discovered Task in the PRD's Discovered Tasks section, add a guardrail note to
 | Metric            | Count |
 | ----------------- | ----- |
 | Total rescue PRDs | 5     |
-| Complete          | 3     |
-| Pending           | 2     |
+| Complete          | 4     |
+| Pending           | 1     |
 | Blocked           | 0     |
