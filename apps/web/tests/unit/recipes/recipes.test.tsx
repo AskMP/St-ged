@@ -56,7 +56,7 @@ describe("recipes page", () => {
   it("renders skill filter chips (Jordan's Confidence Rule)", async () => {
     renderRecipes();
     await waitFor(() => {
-      expect(screen.getByTestId("skill-filters")).toBeInTheDocument();
+      expect(screen.getByTestId("recipe-filter-skill")).toBeInTheDocument();
     });
     expect(screen.getByTestId("skill-filter-beginner")).toBeInTheDocument();
     expect(screen.getByTestId("skill-filter-home_cook")).toBeInTheDocument();

@@ -21,11 +21,9 @@ vi.mock("../../src/lib/api-client", () => ({
       cost: vi.fn(),
     },
     dietary: {
-      getProfiles: vi
-        .fn()
-        .mockResolvedValue({
-          profiles: ["vegan", "vegetarian", "dairy-free", "gluten-free"],
-        }),
+      getProfiles: vi.fn().mockResolvedValue({
+        profiles: ["vegan", "vegetarian", "dairy-free", "gluten-free"],
+      }),
       adapt: vi.fn(),
     },
   },
@@ -113,7 +111,7 @@ describe("RecipeLibrary", () => {
       </MemoryRouter>,
     );
     await waitFor(() => {
-      expect(screen.getByTestId("skill-filters")).toBeInTheDocument();
+      expect(screen.getByTestId("recipe-filter-skill")).toBeInTheDocument();
     });
     expect(screen.getByTestId("skill-filter-beginner")).toBeInTheDocument();
     expect(screen.getByTestId("skill-filter-home_cook")).toBeInTheDocument();
@@ -126,7 +124,7 @@ describe("RecipeLibrary", () => {
       </MemoryRouter>,
     );
     await waitFor(() => {
-      expect(screen.getByTestId("diet-filters")).toBeInTheDocument();
+      expect(screen.getByTestId("recipe-filter-diet")).toBeInTheDocument();
     });
   });
 

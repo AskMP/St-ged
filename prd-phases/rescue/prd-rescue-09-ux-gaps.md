@@ -125,7 +125,7 @@ implementation:
 
 ---
 
-### Task 2: Add recipe search and filter to Recipes page `[BD:STG-321]`
+### Task 2: Add recipe search and filter to Recipes page `[BD:stg-wrs]` ✓
 
 - **Type**: task
 - **Priority**: P1

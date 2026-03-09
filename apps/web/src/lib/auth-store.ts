@@ -8,6 +8,7 @@ export interface AuthUser {
   householdId: string | null;
   skillLevel: string;
   role: string;
+  dietaryTags?: string[];
 }
 
 interface AuthState {

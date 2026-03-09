@@ -2,6 +2,7 @@ import type { Ingredient, NutritionInfo, Recipe } from "@staged/types";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { apiClient } from "@/lib/api-client";
+import { useAuthStore } from "@/lib/auth-store";
 import { RecipeCard } from "@/components/RecipeCard";
 import {
   acquireWakeLock,
@@ -259,10 +260,28 @@ const DIET_FILTERS = [
 // Maya's Zero-Waste Signal: zero-waste toggle at filter bar
 
 export function RecipeLibrary() {
+  const user = useAuthStore((s) => s.user);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [diet, setDiet] = useState("");
+  // Pre-select dietary filter from user profile (Alex's dietary safety requirement)
+  const [diet, setDiet] = useState(() => {
+    const tags = user?.dietaryTags;
+    if (tags && tags.length > 0) {
+      const knownTags = ["vegan", "vegetarian", "gluten-free", "dairy-free"];
+      const match = tags.find((t) => knownTags.includes(t));
+      return match ?? "";
+    }
+    return "";
+  });
+  const [dietaryAutoApplied] = useState(() => {
+    const tags = user?.dietaryTags;
+    if (tags && tags.length > 0) {
+      const knownTags = ["vegan", "vegetarian", "gluten-free", "dairy-free"];
+      return tags.some((t) => knownTags.includes(t));
+    }
+    return false;
+  });
   const [skillFilter, setSkillFilter] = useState("");
   const [zeroWasteOnly, setZeroWasteOnly] = useState(false);
 
@@ -295,12 +314,25 @@ export function RecipeLibrary() {
         className="w-full border border-stone-200 rounded-lg px-4 py-2 text-sm mb-3 outline-none focus:ring-2 focus:ring-green-500"
       />
 
+      {/* Dietary auto-filter notice */}
+      {dietaryAutoApplied && diet && (
+        <div className="text-xs text-stone-500 mb-2 flex items-center gap-2">
+          <span>Filtered by your dietary preferences.</span>
+          <button
+            onClick={() => setDiet("")}
+            className="text-green-600 hover:underline"
+          >
+            Clear filter
+          </button>
+        </div>
+      )}
+
       {/* Filter bar */}
       <div className="space-y-2 mb-5">
         {/* Skill filter chips (Jordan's Confidence Rule) */}
         <div
           className="flex gap-2 flex-wrap items-center"
-          data-testid="skill-filters"
+          data-testid="recipe-filter-skill"
         >
           <span className="text-xs text-stone-400 font-medium">Skill:</span>
           {SKILL_FILTERS.map((f) => (
@@ -324,7 +356,7 @@ export function RecipeLibrary() {
         {/* Diet filter chips */}
         <div
           className="flex gap-2 flex-wrap items-center"
-          data-testid="diet-filters"
+          data-testid="recipe-filter-diet"
         >
           <span className="text-xs text-stone-400 font-medium">Diet:</span>
           {DIET_FILTERS.map((f) => (
