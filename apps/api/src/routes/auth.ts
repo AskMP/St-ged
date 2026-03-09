@@ -1,13 +1,13 @@
 import bcrypt from "bcryptjs";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
-import { encode } from "next-auth/jwt";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import { pool, query, db } from "../lib/db";
 import { users } from "@staged/db";
 import { eq } from "drizzle-orm";
 import { requireAuth } from "../middleware/auth";
+import { issueSessionToken } from "../lib/auth";
 import {
   createGuestSession,
   getSessionUser,
@@ -169,29 +169,18 @@ authRouter.post("/login", async (c) => {
     throw new HTTPException(401, { message: "Invalid credentials" });
   }
 
-  const secret = process.env.NEXTAUTH_SECRET;
-  if (!secret) {
+  if (!process.env.NEXTAUTH_SECRET) {
     throw new HTTPException(500, { message: "Server misconfigured" });
   }
 
-  // encode() from next-auth/jwt uses salt="" by default, matching
-  // what getToken() passes to decode() when reading the cookie.
-  const token = await encode({
-    token: {
-      sub: user.id,
-      userId: user.id,
-      email: user.email,
-      name: user.displayName,
-      role: "member",
-    },
-    secret,
+  // Re-issue session JWT via shared helper so all token fields stay consistent.
+  await issueSessionToken(c, {
+    id: user.id,
+    email: user.email,
+    name: user.displayName,
+    householdId: user.householdId,
+    role: "member",
   });
-
-  const isProd = process.env.NODE_ENV === "production";
-  c.header(
-    "Set-Cookie",
-    `next-auth.session-token=${token}; Path=/; HttpOnly; SameSite=Lax${isProd ? "; Secure" : ""}`,
-  );
 
   return c.json({
     user: {

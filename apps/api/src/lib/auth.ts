@@ -5,6 +5,8 @@ import { initAuthConfig } from "@hono/auth-js";
 import bcrypt from "bcryptjs";
 import Credentials from "@auth/core/providers/credentials";
 import Google from "@auth/core/providers/google";
+import type { Context } from "hono";
+import { encode } from "next-auth/jwt";
 import { db, query } from "./db";
 
 // skipCSRFCheck symbol allows us to disable the built-in CSRF protection
@@ -108,5 +110,39 @@ export const authConfig: AuthConfig = {
 
 // helper to initialize auth config on Hono app -- consumed in index.ts
 export const initAuth = () => initAuthConfig(() => authConfig);
+
+// Shared JWT cookie issuer. Call this after any operation that changes
+// the user's householdId so the client's token reflects the new state.
+// encode() from next-auth/jwt uses salt="" by default, matching what
+// getToken() passes to decode() when reading the cookie.
+export async function issueSessionToken(
+  c: Context,
+  user: {
+    id: string;
+    email: string | null;
+    name: string | null;
+    householdId: string | null;
+    role?: string;
+  },
+): Promise<void> {
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (!secret) return; // misconfigured -- let callers handle
+  const token = await encode({
+    token: {
+      sub: user.id,
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      householdId: user.householdId,
+      role: user.role ?? "member",
+    },
+    secret,
+  });
+  const isProd = process.env.NODE_ENV === "production";
+  c.header(
+    "Set-Cookie",
+    `next-auth.session-token=${token}; Path=/; HttpOnly; SameSite=Lax${isProd ? "; Secure" : ""}`,
+  );
+}
 
 // this file intentionally avoids any business logic beyond auth wiring
