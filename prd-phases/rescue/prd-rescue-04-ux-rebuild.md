@@ -522,7 +522,7 @@ Use the `mcp__claude-in-chrome__*` tools for browser verification after each maj
 
 ## Phase 5: Verification
 
-### Task 11: Playwright E2E -- core persona flows `[BD:STG-271]`
+### Task 11: Playwright E2E -- core persona flows `[BD:stg-7ub]` [x]
 
 - **Type**: task (RESCUE_PROTOCOL.md browser validation)
 - **Do**: Write E2E tests in `apps/web/tests/e2e/` covering the three primary persona flows:
@@ -560,7 +560,7 @@ Use the `mcp__claude-in-chrome__*` tools for browser verification after each maj
 
 ---
 
-### Task 12: A2HS and PWA installability check `[BD:STG-272]`
+### Task 12: A2HS and PWA installability check `[BD:stg-6jd]` [x]
 
 - **Type**: task (CLAUDE.md "A2HS is a functional requirement")
 - **Do**: Per CLAUDE.md: "The Add-to-Home-Screen prompt is NOT optional UX polish.
@@ -582,7 +582,7 @@ Use the `mcp__claude-in-chrome__*` tools for browser verification after each maj
 
 ---
 
-### Task 13: Update CORRECTION_LOG.md and rescue manifest `[BD:STG-273]`
+### Task 13: Update CORRECTION_LOG.md and rescue manifest `[BD:stg-1bg]` [x]
 
 - **Type**: chore
 - **Do**:

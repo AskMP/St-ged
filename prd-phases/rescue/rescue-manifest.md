@@ -129,9 +129,9 @@ Discovered Task in the PRD's Discovered Tasks section, add a guardrail note to
 
 | Field                | Value                      |
 | -------------------- | -------------------------- |
-| Last completed PRD   | rescue-03                  |
-| Current rescue phase | 4 (UX Rebuild)             |
-| Progress             | 4 / 5 rescue PRDs complete |
+| Last completed PRD   | rescue-04                  |
+| Current rescue phase | COMPLETE                   |
+| Progress             | 5 / 5 rescue PRDs complete |
 | Foundation status    | GREEN                      |
 
 ---
@@ -156,7 +156,7 @@ Discovered Task in the PRD's Discovered Tasks section, add a guardrail note to
 
 ### Phase R4: UX Rebuild (Frontend)
 
-- [ ] **rescue-04** | `prd-phases/rescue/prd-rescue-04-ux-rebuild.md` | Ground-up persona-driven frontend rebuild via /ux-rebuild skill | status: pending | requires: rescue-02 |
+- [x] **rescue-04** | `prd-phases/rescue/prd-rescue-04-ux-rebuild.md` | Ground-up persona-driven frontend rebuild via /ux-rebuild skill | status: complete | requires: rescue-02 |
 
 > Note: rescue-03 and rescue-04 both require rescue-02 but are independent of each
 > other. If running parallel agents, they may execute concurrently on separate branches.
@@ -168,6 +168,6 @@ Discovered Task in the PRD's Discovered Tasks section, add a guardrail note to
 | Metric            | Count |
 | ----------------- | ----- |
 | Total rescue PRDs | 5     |
-| Complete          | 4     |
-| Pending           | 1     |
+| Complete          | 5     |
+| Pending           | 0     |
 | Blocked           | 0     |
