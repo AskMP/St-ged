@@ -1,3 +1,25 @@
+## Rescue Iteration 7 -- rescue-07 Task 1: Migrate household-service.ts to Drizzle ORM
+
+- **Status**: Complete
+- **Branch**: stg-unj/rescue-00-schema (commit d793951)
+- **BD task**: stg-p90 (closed)
+- **Files changed**:
+  - `apps/api/src/services/household-service.ts` -- full Drizzle migration, removed HOUSEHOLDS/COST_ENTRIES/ROTATIONS arrays
+  - `packages/db/src/schema/householdCosts.ts` -- new schema file (id, householdId, total, splits jsonb, date)
+  - `packages/db/src/schema/cookRotations.ts` -- new schema file (id, householdId unique, frequency, members jsonb, startDate)
+  - `packages/db/src/schema/index.ts` -- exports new tables
+  - `packages/db/src/migrations/0001_ordinary_amazoness.sql` -- migration applied
+  - `apps/api/src/middleware/auth.ts` -- TEST_USER_MAP for deterministic stable UUIDs; resolveTestUserId upserts user row
+  - `apps/api/vitest.config.ts` -- singleFork pool to prevent parallel test DB conflicts
+  - All household/pantry/list/plan/socket/cost/fridge-clearance tests updated to use real UUID users
+- **Patterns discovered**: `household_members.user_id` has DB FK constraint not in Drizzle schema -- tests need real user rows. Added TEST_USER_MAP in auth middleware for alias->UUID mapping.
+- **Gotchas**: verifyHouseholdAccess status changed from 401 to 403 (correct -- 401=unauthenticated, 403=unauthorized). Socket test used `client.on('connect', ...)` which never fires if already connected -- fixed with `client.once` + `client.connected` check. Auth tests' `resetDb` truncates `users CASCADE` causing test isolation failures when run in parallel -- fixed with `singleFork` pool.
+- **Tests**: 83 passed, 5 skipped, 0 failing (baseline maintained)
+- **Next task**: rescue-07 Task 2 -- migrate pantry service to Drizzle
+- **Time**: 2026-03-09
+
+---
+
 ## Rescue Iteration 6 -- rescue-06: Fix SPA Signin (JWT cookie endpoint)
 
 - **Status**: Complete
