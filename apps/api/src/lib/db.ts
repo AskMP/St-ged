@@ -1,5 +1,6 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
+import * as schema from "@staged/db";
 
 // Single shared pool for all API services.
 // Import from here -- do not create new Pool() instances in individual files.
@@ -11,12 +12,13 @@ export const pool = new Pool({
   max: 10, // conservative limit; leaves headroom for Auth.js adapter connections
 });
 
-// Drizzle instance without schema -- rescue-03 will add typed schema queries.
-// Currently used only by DrizzleAdapter in auth.ts for session storage.
-export const db = drizzle(pool);
+// Drizzle instance with schema -- enables db.query.* relational API.
+// Schema is imported from @staged/db (packages/db/src/schema).
+export const db = drizzle(pool, { schema });
 
-// Convenience raw-query wrapper for services that need raw SQL
-// (to be removed incrementally in rescue-03 as services migrate to Drizzle ORM)
+// Convenience raw-query wrapper -- keep for Auth.js raw SQL (signup/me endpoints)
+// and full-text search against usda_ingredients.search_vector.
+// Services should prefer db.select()... over this wrapper.
 export async function query<T = unknown>(
   text: string,
   params?: unknown[],
