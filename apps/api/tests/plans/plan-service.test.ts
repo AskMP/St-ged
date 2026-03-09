@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { db } from "../../src/lib/db";
-import { users } from "@staged/db";
+import { users, recipes } from "@staged/db";
 import { createHousehold } from "../../src/services/household-service";
 import * as listService from "../../src/services/list-service";
 import {
@@ -11,7 +11,22 @@ import {
   getWeeklyPlan,
   removeMealEntry,
 } from "../../src/services/plan-service";
-import * as recipeService from "../../src/services/recipe-service";
+
+// Insert a real recipe into the DB (needed for FK constraint on meal_plan_entries)
+async function createTestRecipe(title: string): Promise<{ id: string }> {
+  const [row] = await db
+    .insert(recipes)
+    .values({
+      title,
+      servingsBase: 4,
+      skillLevel: "beginner",
+      dietaryTags: [],
+      techniqueTags: [],
+      isLicensed: false,
+    })
+    .returning({ id: recipes.id });
+  return row!;
+}
 
 async function createTestUser(): Promise<string> {
   const id = randomUUID();
@@ -46,10 +61,10 @@ describe("plan service", () => {
   it("adds and removes entries", async () => {
     const week = "2025-01-06";
     const { plan } = (await getWeeklyPlan(hid, week))!;
-    const recipe = await recipeService.createRecipe({ title: "Toast" } as any);
+    const recipe = await createTestRecipe("Toast");
     const entry = await addMealEntry(plan.id, {
       recipeId: recipe.id,
-      day: "2025-01-07",
+      date: "2025-01-07",
       servings: 2,
     });
     expect(entry.planId).toBe(plan.id);
@@ -65,10 +80,10 @@ describe("plan service", () => {
     const w1 = "2025-01-06";
     const w2 = "2025-01-13";
     const { plan } = (await getWeeklyPlan(hid, w1))!;
-    const recipe = await recipeService.createRecipe({ title: "Soup" } as any);
+    const recipe = await createTestRecipe("Soup");
     await addMealEntry(plan.id, {
       recipeId: recipe.id,
-      day: "2025-01-08",
+      date: "2025-01-08",
       servings: 1,
     });
     const dest = await copyWeek(hid, w1, w2, userId);
@@ -80,10 +95,10 @@ describe("plan service", () => {
   it("generates a grocery list", async () => {
     const w = "2025-01-20";
     const plan = await createPlan(hid, w, userId);
-    const recipe = await recipeService.createRecipe({ title: "Salad" } as any);
+    const recipe = await createTestRecipe("Salad");
     await addMealEntry(plan.id, {
       recipeId: recipe.id,
-      day: "2025-01-21",
+      date: "2025-01-21",
       servings: 3,
     });
     const list = await generateList(plan.id, userId);
