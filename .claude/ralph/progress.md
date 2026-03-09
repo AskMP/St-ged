@@ -1,3 +1,18 @@
+## Rescue Iteration 4 -- rescue-03: Service Layer Migration (raw SQL -> Drizzle ORM)
+
+- **Status**: Complete
+- **Branch**: stg-unj/rescue-00-schema (commits f0f8e37, 20ec64d, 3a3f5f1)
+- **Tasks completed**: 10/10 -- vitest alias, lib/db schema passthrough, auth-service Drizzle migration, auth route /me + /signup Drizzle migration, households/pantry/list/plan/recipes/remaining services audited (all in-memory, no SQL to migrate), pool consolidation verified, test suite green, CORRECTION_LOG + manifest updated
+- **Key finding**: Only 2 files had raw SQL to migrate: auth-service.ts (redeemInvite) and routes/auth.ts (/me + /signup). All other services (household-service, pantry, list-service, plan-service, fulfillment-service, fridge-clearance-service, potluck-service, event-service) use in-memory arrays/maps -- no DB access at all.
+- **Auth.js exception**: routes/auth.ts /signup still has one raw pool.query() for the Auth.js "user" table insert -- acceptable because the Auth.js "user" table is NOT in our Drizzle schema; Auth.js owns that table structure. Per-PRD exemption documented in CORRECTION_LOG.md.
+- **Patterns discovered**: packages/db/src/index.ts exports its own db instance with schema -- but we DON'T import from @staged/db for the API's db instance (separate pool with same schema). Vitest alias resolves @staged/db to packages/db/src/index.ts which creates a second pool -- acceptable for test isolation. Auth.js DrizzleAdapter uses yet another connection; 3 pools total in test context is fine since test env has no Supabase limit.
+- **Gotchas**: Auth.js "user" (note: lowercase "user") table cannot be typed through Drizzle since it's created by DrizzleAdapter, not our schema. Any Auth.js table operation stays raw SQL. The users table (our app-level profile) IS in schema -- always use Drizzle for that.
+- **Tests**: 79 passed, 5 skipped, 0 failing (identical baseline maintained through rescue-03)
+- **Next PRD**: rescue-04 (UX Rebuild) -- only remaining rescue PRD
+- **Time**: 2026-03-08
+
+---
+
 ## Rescue Iteration 3 -- rescue-02: Foundation Verification (Green Gate)
 
 - **Status**: Complete
