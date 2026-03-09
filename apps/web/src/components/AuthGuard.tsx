@@ -1,3 +1,4 @@
+import React from "react";
 import { useCurrentUser } from "@/lib/hooks/use-current-user";
 
 /**
@@ -12,7 +13,9 @@ import { useCurrentUser } from "@/lib/hooks/use-current-user";
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useCurrentUser();
 
-  if (isLoading) {
+  // Show spinner while loading OR while user is null (effect hasn't fired yet on first render).
+  // Without this, the component returns null for one frame before the /me fetch starts.
+  if (isLoading || user === null) {
     return (
       <div
         className="min-h-screen flex items-center justify-center bg-stone-50"
@@ -21,11 +24,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         <div className="text-stone-400 text-sm animate-pulse">Loading...</div>
       </div>
     );
-  }
-
-  if (!user) {
-    // useCurrentUser handles the redirect -- render nothing while navigating
-    return null;
   }
 
   return <>{children}</>;

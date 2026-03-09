@@ -19,7 +19,10 @@ export function useCurrentUser() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user !== null) return; // already hydrated
+    if (user !== null) {
+      setLoading(false);
+      return; // already hydrated
+    }
 
     let cancelled = false;
     setLoading(true);
