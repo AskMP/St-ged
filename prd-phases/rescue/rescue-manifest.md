@@ -127,12 +127,12 @@ Discovered Task in the PRD's Discovered Tasks section, add a guardrail note to
 
 ## Current State
 
-| Field                | Value                      |
-| -------------------- | -------------------------- |
-| Last completed PRD   | rescue-04                  |
-| Current rescue phase | COMPLETE                   |
-| Progress             | 5 / 5 rescue PRDs complete |
-| Foundation status    | GREEN                      |
+| Field                | Value                                                                           |
+| -------------------- | ------------------------------------------------------------------------------- |
+| Last completed PRD   | rescue-07                                                                       |
+| Current rescue phase | IN PROGRESS -- Phase R8 Multi-Household                                         |
+| Progress             | 7 / 9 rescue PRDs complete                                                      |
+| Foundation status    | GREEN -- all 5 core services migrated to Drizzle; data persists across restarts |
 
 ---
 
@@ -150,16 +150,38 @@ Discovered Task in the PRD's Discovered Tasks section, add a guardrail note to
 
 - [x] **rescue-02** | `prd-phases/rescue/prd-rescue-02-verify.md` | Green gate: register -> login -> /me -> household in real browser; type-check passes | status: complete | requires: rescue-01 |
 
-### Phase R3: Service Layer Migration (Quality)
+### Phase R3: Service Layer Migration (Claimed Complete -- Actually Not Done)
 
 - [x] **rescue-03** | `prd-phases/rescue/prd-rescue-03-service-layer.md` | Migrate all raw-SQL services to Drizzle ORM type-safe queries | status: complete | requires: rescue-02 |
+  > **NOTE**: Marked complete but implementation was never performed. All core services
+  > still use in-memory arrays. rescue-07 is the actual implementation of this work.
 
 ### Phase R4: UX Rebuild (Frontend)
 
 - [x] **rescue-04** | `prd-phases/rescue/prd-rescue-04-ux-rebuild.md` | Ground-up persona-driven frontend rebuild via /ux-rebuild skill | status: complete | requires: rescue-02 |
 
+### Phase R5: Signup Debug
+
+- [x] **rescue-05** | `prd-phases/rescue/prd-rescue-05-signup-debug.md` | Debug and fix signup flow: password hashing, user creation, 400 errors | status: complete | requires: rescue-02 |
+
+### Phase R6: SPA Signin
+
+- [x] **rescue-06** | `prd-phases/rescue/prd-rescue-06-signin-spa.md` | Fix Auth.js SPA signin: custom /api/auth/login endpoint, cookie parse fix, /api prefix on all client paths | status: complete | requires: rescue-05 |
+
 > Note: rescue-03 and rescue-04 both require rescue-02 but are independent of each
-> other. If running parallel agents, they may execute concurrently on separate branches.
+> other.
+
+### Phase R7: Service Persistence (P0 -- Data Lost on Restart)
+
+- [x] **rescue-07** | `prd-phases/rescue/prd-rescue-07-persistence.md` | Migrate all in-memory service stores to Drizzle: households, pantry, lists, plans, recipes; fix MealPlanEntry type | status: complete | requires: rescue-06 |
+
+### Phase R8: Multi-Household Support
+
+- [ ] **rescue-08** | `prd-phases/rescue/prd-rescue-08-household-multi.md` | Multi-household create/join/switch; JWT refresh on household change; fix HouseholdOps stale ID; household switcher in Settings | status: pending | requires: rescue-07 |
+
+### Phase R9: UX Gaps
+
+- [ ] **rescue-09** | `prd-phases/rescue/prd-rescue-09-ux-gaps.md` | Auth persist (Zustand), recipe search/filter, planning autocomplete, offline banner, dietary filter API, seed recipes | status: pending | requires: rescue-08 |
 
 ---
 
@@ -167,7 +189,7 @@ Discovered Task in the PRD's Discovered Tasks section, add a guardrail note to
 
 | Metric            | Count |
 | ----------------- | ----- |
-| Total rescue PRDs | 5     |
-| Complete          | 5     |
-| Pending           | 0     |
+| Total rescue PRDs | 9     |
+| Complete          | 7     |
+| Pending           | 2     |
 | Blocked           | 0     |
