@@ -1,13 +1,14 @@
 import type { Ingredient, NutritionInfo, Recipe } from "@staged/types";
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { apiClient } from "../lib/api-client";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { apiClient } from "@/lib/api-client";
+import { RecipeCard } from "@/components/RecipeCard";
 import {
   acquireWakeLock,
   isWakeLockSupported,
   releaseWakeLock,
-} from "../lib/wake-lock";
-import { CoachedStep } from "../components/CoachedStep";
+} from "@/lib/wake-lock";
+import { CoachedStep } from "@/components/CoachedStep";
 
 // ---- Shared helpers ----
 
@@ -33,7 +34,7 @@ function NutritionRow({ nutrition }: { nutrition: NutritionInfo }) {
 
 // ---- Dietary Adaptation Component ----
 
-type DietaryProfile = 'vegan' | 'vegetarian' | 'dairy-free' | 'gluten-free';
+type DietaryProfile = "vegan" | "vegetarian" | "dairy-free" | "gluten-free";
 
 type SubstitutionState = {
   original: string;
@@ -44,23 +45,28 @@ type SubstitutionState = {
 
 function DietaryAdaptation({ recipeId }: { recipeId: string }) {
   const [profiles, setProfiles] = useState<DietaryProfile[]>([]);
-  const [selectedProfile, setSelectedProfile] = useState<DietaryProfile | null>(null);
+  const [selectedProfile, setSelectedProfile] = useState<DietaryProfile | null>(
+    null,
+  );
   const [adapted, setAdapted] = useState<any>(null);
   const [substitutions, setSubstitutions] = useState<SubstitutionState[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [savedMessage, setSavedMessage] = useState('');
+  const [savedMessage, setSavedMessage] = useState("");
 
   useEffect(() => {
-    apiClient.dietary.getProfiles().then((data) => {
-      setProfiles(data.profiles as DietaryProfile[]);
-    }).catch(() => {});
+    apiClient.dietary
+      .getProfiles()
+      .then((data) => {
+        setProfiles(data.profiles as DietaryProfile[]);
+      })
+      .catch(() => {});
   }, []);
 
   const handleAdapt = async (profile: DietaryProfile) => {
     setSelectedProfile(profile);
     setLoading(true);
-    setSavedMessage('');
+    setSavedMessage("");
     try {
       const result = await apiClient.dietary.adapt(recipeId, profile);
       setAdapted(result);
@@ -69,10 +75,10 @@ function DietaryAdaptation({ recipeId }: { recipeId: string }) {
         result.substitutions.map((sub: any) => ({
           ...sub,
           accepted: true,
-        }))
+        })),
       );
     } catch (e) {
-      console.error('Adaptation failed', e);
+      console.error("Adaptation failed", e);
     } finally {
       setLoading(false);
     }
@@ -81,8 +87,8 @@ function DietaryAdaptation({ recipeId }: { recipeId: string }) {
   const handleToggleSub = (index: number) => {
     setSubstitutions((prev) =>
       prev.map((sub, i) =>
-        i === index ? { ...sub, accepted: !sub.accepted } : sub
-      )
+        i === index ? { ...sub, accepted: !sub.accepted } : sub,
+      ),
     );
   };
 
@@ -90,7 +96,7 @@ function DietaryAdaptation({ recipeId }: { recipeId: string }) {
     setSelectedProfile(null);
     setAdapted(null);
     setSubstitutions([]);
-    setSavedMessage('');
+    setSavedMessage("");
   };
 
   const handleSaveAdapted = async () => {
@@ -98,31 +104,40 @@ function DietaryAdaptation({ recipeId }: { recipeId: string }) {
     setSaving(true);
     try {
       // Filter to only accepted substitutions
-      const acceptedSubs = substitutions.filter(s => s.accepted);
+      const acceptedSubs = substitutions.filter((s) => s.accepted);
       // Apply accepted substitutions to create final recipe
       const finalRecipe = {
         ...adapted.adaptedRecipe,
-        ingredients: adapted.adaptedRecipe.ingredients?.map((ing: any, idx: number) => {
-          const sub = acceptedSubs.find(s => s.original === (typeof ing === 'string' ? ing : ing.name));
-          if (sub) {
-            return typeof ing === 'string' ? sub.replacement : { ...ing, name: sub.replacement };
-          }
-          return ing;
-        }),
+        ingredients: adapted.adaptedRecipe.ingredients?.map(
+          (ing: any, idx: number) => {
+            const sub = acceptedSubs.find(
+              (s) => s.original === (typeof ing === "string" ? ing : ing.name),
+            );
+            if (sub) {
+              return typeof ing === "string"
+                ? sub.replacement
+                : { ...ing, name: sub.replacement };
+            }
+            return ing;
+          },
+        ),
       };
       await apiClient.recipes.create(finalRecipe);
-      setSavedMessage('Adapted recipe saved to your library!');
+      setSavedMessage("Adapted recipe saved to your library!");
     } catch (e) {
-      console.error('Save failed', e);
+      console.error("Save failed", e);
     } finally {
       setSaving(false);
     }
   };
 
-  const acceptedCount = substitutions.filter(s => s.accepted).length;
+  const acceptedCount = substitutions.filter((s) => s.accepted).length;
 
   return (
-    <div className="bg-purple-50 rounded-xl p-4 mb-6" data-testid="dietary-adaptation">
+    <div
+      className="bg-purple-50 rounded-xl p-4 mb-6"
+      data-testid="dietary-adaptation"
+    >
       <h3 className="font-semibold text-stone-900 mb-3">Make This Recipe...</h3>
       {!adapted ? (
         <div className="flex flex-wrap gap-2">
@@ -133,9 +148,11 @@ function DietaryAdaptation({ recipeId }: { recipeId: string }) {
               disabled={loading}
               className="px-4 py-2 rounded-lg border border-purple-200 bg-white text-purple-700 text-sm font-medium hover:bg-purple-100 transition-colors disabled:opacity-50"
             >
-              {profile === 'dairy-free' ? 'Dairy-Free' : 
-               profile === 'gluten-free' ? 'Gluten-Free' : 
-               profile.charAt(0).toUpperCase() + profile.slice(1)}
+              {profile === "dairy-free"
+                ? "Dairy-Free"
+                : profile === "gluten-free"
+                  ? "Gluten-Free"
+                  : profile.charAt(0).toUpperCase() + profile.slice(1)}
             </button>
           ))}
         </div>
@@ -152,15 +169,19 @@ function DietaryAdaptation({ recipeId }: { recipeId: string }) {
               Start over
             </button>
           </div>
-          
+
           {substitutions.length > 0 ? (
             <div className="mb-4">
               <p className="text-sm text-stone-600 mb-2">
-                Review and toggle substitutions ({acceptedCount} of {substitutions.length} applied):
+                Review and toggle substitutions ({acceptedCount} of{" "}
+                {substitutions.length} applied):
               </p>
               <ul className="space-y-2" data-testid="substitutions-list">
                 {substitutions.map((sub, i) => (
-                  <li key={i} className={`flex items-start gap-2 text-sm p-2 rounded ${sub.accepted ? 'bg-green-50' : 'bg-stone-100'}`}>
+                  <li
+                    key={i}
+                    className={`flex items-start gap-2 text-sm p-2 rounded ${sub.accepted ? "bg-green-50" : "bg-stone-100"}`}
+                  >
                     <input
                       type="checkbox"
                       checked={sub.accepted}
@@ -169,19 +190,31 @@ function DietaryAdaptation({ recipeId }: { recipeId: string }) {
                       data-testid={`sub-toggle-${i}`}
                     />
                     <div className="flex-1">
-                      <span className={sub.accepted ? 'text-stone-800' : 'text-stone-400 line-through'}>
+                      <span
+                        className={
+                          sub.accepted
+                            ? "text-stone-800"
+                            : "text-stone-400 line-through"
+                        }
+                      >
                         {sub.original}
                       </span>
                       <span className="mx-1">→</span>
-                      <span className="text-green-700 font-medium">{sub.replacement}</span>
-                      <p className="text-xs text-stone-500 mt-1">{sub.reason}</p>
+                      <span className="text-green-700 font-medium">
+                        {sub.replacement}
+                      </span>
+                      <p className="text-xs text-stone-500 mt-1">
+                        {sub.reason}
+                      </p>
                     </div>
                   </li>
                 ))}
               </ul>
             </div>
           ) : (
-            <p className="text-sm text-stone-500 mb-4">No substitutions needed for this recipe.</p>
+            <p className="text-sm text-stone-500 mb-4">
+              No substitutions needed for this recipe.
+            </p>
           )}
 
           <div className="flex items-center gap-3">
@@ -191,10 +224,15 @@ function DietaryAdaptation({ recipeId }: { recipeId: string }) {
               className="px-4 py-2 rounded-lg bg-purple-600 text-white text-sm font-medium hover:bg-purple-700 transition-colors disabled:opacity-50"
               data-testid="save-adapted-recipe"
             >
-              {saving ? 'Saving...' : 'Save Adapted Recipe'}
+              {saving ? "Saving..." : "Save Adapted Recipe"}
             </button>
             {savedMessage && (
-              <span className="text-sm text-green-600" data-testid="save-message">{savedMessage}</span>
+              <span
+                className="text-sm text-green-600"
+                data-testid="save-message"
+              >
+                {savedMessage}
+              </span>
             )}
           </div>
         </div>
@@ -203,23 +241,30 @@ function DietaryAdaptation({ recipeId }: { recipeId: string }) {
   );
 }
 
-const DIET_FILTERS = [
-  "vegan",
-  "vegetarian",
-  "gluten-free",
-  "dairy-free",
+const SKILL_FILTERS = [
+  { value: "beginner", label: "Beginner" },
+  { value: "home_cook", label: "Home Cook" },
+  { value: "confident", label: "Confident" },
 ] as const;
 
-// ---- Recipe Library ----
+const DIET_FILTERS = [
+  { value: "vegan", label: "Vegan" },
+  { value: "vegetarian", label: "Vegetarian" },
+  { value: "gluten-free", label: "Gluten-free" },
+  { value: "dairy-free", label: "Dairy-free" },
+] as const;
+
+// ---- Recipe Library (persona-driven rebuild) ----
+// Jordan's Confidence Rule: skill badges + skill filter prominent
+// Maya's Zero-Waste Signal: zero-waste toggle at filter bar
 
 export function RecipeLibrary() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [diet, setDiet] = useState("");
-  const [importUrl, setImportUrl] = useState("");
-  const [importing, setImporting] = useState(false);
-  const [importError, setImportError] = useState("");
+  const [skillFilter, setSkillFilter] = useState("");
+  const [zeroWasteOnly, setZeroWasteOnly] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -230,22 +275,12 @@ export function RecipeLibrary() {
       .finally(() => setLoading(false));
   }, [diet, search]);
 
-  const handleImport = async () => {
-    if (!importUrl.trim()) return;
-    setImporting(true);
-    setImportError("");
-    try {
-      await apiClient.recipes.import(importUrl.trim());
-      setImportUrl("");
-      // Refresh list
-      const data = await apiClient.recipes.list({ diet: diet || undefined });
-      setRecipes(data as Recipe[]);
-    } catch (e: unknown) {
-      setImportError(e instanceof Error ? e.message : "Import failed");
-    } finally {
-      setImporting(false);
-    }
-  };
+  // Client-side filter for skill level and zero-waste (not in API query params)
+  const filteredRecipes = recipes.filter((r) => {
+    if (skillFilter && r.skill_level !== skillFilter) return false;
+    if (zeroWasteOnly && !r.zero_waste) return false;
+    return true;
+  });
 
   return (
     <div data-testid="recipe-library" className="max-w-2xl mx-auto py-6 px-4">
@@ -260,79 +295,96 @@ export function RecipeLibrary() {
         className="w-full border border-stone-200 rounded-lg px-4 py-2 text-sm mb-3 outline-none focus:ring-2 focus:ring-green-500"
       />
 
-      {/* Diet filter chips */}
-      <div className="flex gap-2 flex-wrap mb-4" data-testid="diet-filters">
-        {DIET_FILTERS.map((f) => (
+      {/* Filter bar */}
+      <div className="space-y-2 mb-5">
+        {/* Skill filter chips (Jordan's Confidence Rule) */}
+        <div
+          className="flex gap-2 flex-wrap items-center"
+          data-testid="skill-filters"
+        >
+          <span className="text-xs text-stone-400 font-medium">Skill:</span>
+          {SKILL_FILTERS.map((f) => (
+            <button
+              key={f.value}
+              onClick={() =>
+                setSkillFilter(skillFilter === f.value ? "" : f.value)
+              }
+              className={`px-3 py-1 rounded-full border text-xs font-medium transition-colors ${
+                skillFilter === f.value
+                  ? "border-green-500 bg-green-50 text-green-700"
+                  : "border-stone-200 text-stone-600 hover:border-stone-300"
+              }`}
+              data-testid={`skill-filter-${f.value}`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Diet filter chips */}
+        <div
+          className="flex gap-2 flex-wrap items-center"
+          data-testid="diet-filters"
+        >
+          <span className="text-xs text-stone-400 font-medium">Diet:</span>
+          {DIET_FILTERS.map((f) => (
+            <button
+              key={f.value}
+              onClick={() => setDiet(diet === f.value ? "" : f.value)}
+              className={`px-3 py-1 rounded-full border text-xs font-medium transition-colors ${
+                diet === f.value
+                  ? "border-green-500 bg-green-50 text-green-700"
+                  : "border-stone-200 text-stone-600 hover:border-stone-300"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+
+          {/* Zero-Waste toggle (Maya's Zero-Waste Signal) */}
           <button
-            key={f}
-            onClick={() => setDiet(diet === f ? "" : f)}
-            className={`px-3 py-1 rounded-full border text-sm font-medium transition-colors ${
-              diet === f
+            onClick={() => setZeroWasteOnly(!zeroWasteOnly)}
+            className={`px-3 py-1 rounded-full border text-xs font-medium transition-colors flex items-center gap-1 ${
+              zeroWasteOnly
                 ? "border-green-500 bg-green-50 text-green-700"
                 : "border-stone-200 text-stone-600 hover:border-stone-300"
             }`}
+            data-testid="zero-waste-toggle"
           >
-            {f}
+            🌿 Zero-waste
           </button>
-        ))}
-      </div>
-
-      {/* Import form */}
-      <div className="flex gap-2 mb-6">
-        <input
-          data-testid="import-url"
-          placeholder="Paste recipe URL to import..."
-          value={importUrl}
-          onChange={(e) => setImportUrl(e.target.value)}
-          className="flex-1 border border-stone-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-green-500"
-        />
-        <button
-          data-testid="import-btn"
-          onClick={handleImport}
-          disabled={importing || !importUrl.trim()}
-          className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 disabled:opacity-50"
-        >
-          {importing ? "Importing..." : "Import"}
-        </button>
-      </div>
-      {importError && (
-        <p data-testid="import-error" className="text-red-500 text-sm mb-4">
-          {importError}
-        </p>
-      )}
-
-      {/* Recipe cards */}
-      {loading ? (
-        <div className="space-y-3">
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
         </div>
-      ) : recipes.length === 0 ? (
-        <p className="text-stone-400 text-center py-12">
-          No recipes yet. Import one above or add via the API.
-        </p>
-      ) : (
-        <div className="space-y-3">
-          {recipes.map((r) => (
-            <Link
-              key={r.id}
-              to={`/recipes/${r.id}`}
-              data-testid="recipe-card"
-              className="block border border-stone-200 rounded-xl p-4 hover:border-green-400 transition-colors"
+      </div>
+
+      {/* Recipe grid: 2-col mobile, 3-col tablet */}
+      {loading ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {[1, 2, 3, 4].map((i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
+      ) : filteredRecipes.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-stone-400 text-sm mb-2">
+            No recipes match your filters.
+          </p>
+          {(skillFilter || diet || zeroWasteOnly) && (
+            <button
+              onClick={() => {
+                setSkillFilter("");
+                setDiet("");
+                setZeroWasteOnly(false);
+              }}
+              className="text-green-600 text-sm hover:underline"
             >
-              <div className="font-semibold text-stone-900">{r.title}</div>
-              {r.description && (
-                <div className="text-sm text-stone-500 mt-1 line-clamp-2">
-                  {r.description}
-                </div>
-              )}
-              {r.nutrition_per_serving && (
-                <div className="mt-2">
-                  <NutritionRow nutrition={r.nutrition_per_serving} />
-                </div>
-              )}
-            </Link>
+              Clear filters
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {filteredRecipes.map((r) => (
+            <RecipeCard key={r.id} recipe={r} />
           ))}
         </div>
       )}
@@ -609,7 +661,7 @@ export function CookingView() {
           data-testid="cooking-step"
           className="text-xl font-medium leading-relaxed max-w-md"
         >
-          <CoachedStep step={steps[step] || ''} />
+          <CoachedStep step={steps[step] || ""} />
         </p>
       </div>
 

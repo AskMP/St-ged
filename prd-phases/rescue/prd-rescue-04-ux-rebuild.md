@@ -393,7 +393,7 @@ Use the `mcp__claude-in-chrome__*` tools for browser verification after each maj
 
 ## Phase 4: Core Pages
 
-### Task 7: Recipe library page `[BD:STG-267]`
+### Task 7: Recipe library page `[BD:stg-8tj]` [x]
 
 - **Type**: feature
 - **Do**: Rebuild `apps/web/src/routes/Recipes.tsx` and recipe-related components.
