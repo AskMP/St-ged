@@ -1,3 +1,15 @@
+## Rescue Iteration 10 -- rescue-08 Complete: All 9 tasks done
+
+- **Status**: Complete
+- **Branch**: stg-unj/rescue-00-schema
+- **Commits**: e395689 (task1), 53dab5f (task2), c4909f3 (task3), dc9d541 (task4), 08df0c0 (task5), 6273d7d (task6), 61c50df (task7), 698d9f6 (task8), c9a9816 (task9)
+- **Summary**: Full multi-household support implemented. JWT refresh on household create/join/switch. HouseholdOps.tsx fixed to use useAuthStore (no more "demo-household"). Settings page household switcher. Onboarding AuthStore update from API response. 91 API tests pass (8 new), 82/83 web tests pass (pre-existing planning-routes failure unrelated). Types package: HouseholdMembership added.
+- **Gotchas**: packages/types/dist is gitignored -- after adding a new type, run `npx tsc -b packages/types` locally to update dist before type-checking web app. joinHousehold always overwrites users.householdId (not conditional on "if none") -- this is the current behavior.
+- **Next task**: rescue-09 -- UX Gaps (auth persist, recipe search, planning autocomplete, offline banner)
+- **Time**: 2026-03-09
+
+---
+
 ## Rescue Iteration 10 -- rescue-08 Task 1: GET /api/users/me/households
 
 - **Status**: Complete
