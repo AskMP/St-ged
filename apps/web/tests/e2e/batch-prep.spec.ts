@@ -58,16 +58,40 @@ test.describe('Batch-prep page', () => {
   test('runtime batch-prep flow (requires API server)', async ({ page, context }) => {
     test.skip(process.env.BATCH_RUNTIME !== '1', 'Set BATCH_RUNTIME=1 and run dev servers to exercise real API')
 
-    // create two recipes via real API
-    await context.request.post('http://localhost:3000/api/recipes', {
-      data: { id: 'r1', title: 'Real One', ingredients: ['a', 'b'] },
-    })
-    await context.request.post('http://localhost:3000/api/recipes', {
-      data: { id: 'r2', title: 'Real Two', ingredients: ['b', 'c'] },
+    // authenticate as guest and copy cookie into browser context
+    const guest = await context.request.post('http://localhost:3000/api/auth/guest')
+    const rawCookies = guest.headers()['set-cookie']
+    if (rawCookies) {
+      const list = Array.isArray(rawCookies) ? rawCookies : [rawCookies]
+      const cookies = list.map((c) => {
+        const [pair] = c.split(';')
+        const [name, value] = pair.split('=')
+        return { name, value, domain: 'localhost', path: '/' }
+      })
+      await context.addCookies(cookies)
+    }
+
+    // create two recipes via browser context so cookies (auth) are included
+    await page.evaluate(async () => {
+      await fetch('/api/recipes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: 'r1', title: 'Real One', ingredients: ['a', 'b'] }),
+      })
+      await fetch('/api/recipes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: 'r2', title: 'Real Two', ingredients: ['b', 'c'] }),
+      })
     })
 
     await page.goto('/batch-prep')
     await page.waitForSelector('[data-testid="batch-prep-page"]')
+
+    // wait for the recipes list response and log body
+    const listResp = await page.waitForResponse((r) => r.url().includes('/api/recipes') && r.status() === 200)
+    const listBody = await listResp.json()
+    console.log('recipes list', listBody)
 
     // select both recipes by their real titles
     await page.click('text=Real One')

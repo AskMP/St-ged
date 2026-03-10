@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 // These tests require the dev server at http://localhost:5173
 // The API is mocked via route interception so no API server is required.

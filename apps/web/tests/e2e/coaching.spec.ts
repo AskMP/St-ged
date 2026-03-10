@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test'
-import { mockRecipesApi, injectOnboardingComplete } from './helpers/fixtures'
+import { expect, test } from '@playwright/test'
+import { injectOnboardingComplete, mockRecipesApi } from './helpers/fixtures'
 
 // E2E tests for in-step coaching tooltips.
 // Verifies that technique/ingredient terms in cooking steps render as

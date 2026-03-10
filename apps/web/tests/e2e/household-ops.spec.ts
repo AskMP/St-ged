@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { injectOnboardingComplete } from './helpers/fixtures'
 
 // Mocks for household ops API endpoints
