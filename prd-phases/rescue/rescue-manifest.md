@@ -129,9 +129,9 @@ Discovered Task in the PRD's Discovered Tasks section, add a guardrail note to
 
 | Field                | Value                                                                           |
 | -------------------- | ------------------------------------------------------------------------------- |
-| Last completed PRD   | rescue-08                                                                       |
-| Current rescue phase | IN PROGRESS -- Phase R9 UX Gaps                                                 |
-| Progress             | 8 / 9 rescue PRDs complete                                                      |
+| Last completed PRD   | rescue-09                                                                       |
+| Current rescue phase | COMPLETE -- all 9 rescue PRDs done                                              |
+| Progress             | 9 / 9 rescue PRDs complete                                                      |
 | Foundation status    | GREEN -- all 5 core services migrated to Drizzle; data persists across restarts |
 
 ---
@@ -181,7 +181,7 @@ Discovered Task in the PRD's Discovered Tasks section, add a guardrail note to
 
 ### Phase R9: UX Gaps
 
-- [ ] **rescue-09** | `prd-phases/rescue/prd-rescue-09-ux-gaps.md` | Auth persist (Zustand), recipe search/filter, planning autocomplete, offline banner, dietary filter API, seed recipes | status: pending | requires: rescue-08 |
+- [x] **rescue-09** | `prd-phases/rescue/prd-rescue-09-ux-gaps.md` | Auth persist (Zustand), recipe search/filter, planning autocomplete, offline banner, dietary filter API, seed recipes | status: complete | requires: rescue-08 |
 
 ---
 
@@ -190,6 +190,6 @@ Discovered Task in the PRD's Discovered Tasks section, add a guardrail note to
 | Metric            | Count |
 | ----------------- | ----- |
 | Total rescue PRDs | 9     |
-| Complete          | 8     |
-| Pending           | 1     |
+| Complete          | 9     |
+| Pending           | 0     |
 | Blocked           | 0     |

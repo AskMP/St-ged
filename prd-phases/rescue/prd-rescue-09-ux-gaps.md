@@ -345,7 +345,7 @@ implementation:
 
 ---
 
-### Task 8: Update CORRECTION_LOG.md and rescue manifest `[BD:STG-327]`
+### Task 8: Update CORRECTION_LOG.md and rescue manifest `[BD:stg-ac7]` ✓
 
 - **Type**: chore
 - **Do**:
