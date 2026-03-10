@@ -252,7 +252,7 @@ implementation:
 
 ---
 
-### Task 5: Apply dietary profile to recipe listing API `[BD:STG-324]`
+### Task 5: Apply dietary profile to recipe listing API `[BD:stg-bpj]` ✓
 
 - **Type**: task
 - **Priority**: P1

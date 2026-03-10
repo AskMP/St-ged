@@ -288,7 +288,7 @@ export function RecipeLibrary() {
   useEffect(() => {
     setLoading(true);
     apiClient.recipes
-      .list({ diet: diet || undefined, search: search || undefined })
+      .list({ dietaryTag: diet || undefined, search: search || undefined })
       .then((data) => setRecipes(data as Recipe[]))
       .catch(() => setRecipes([]))
       .finally(() => setLoading(false));

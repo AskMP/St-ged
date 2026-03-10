@@ -240,9 +240,14 @@ export const apiClient = {
     },
   },
   recipes: {
-    list(params?: { diet?: string; search?: string }) {
+    list(params?: {
+      dietaryTag?: string;
+      skillLevel?: string;
+      search?: string;
+    }) {
       const qs = new URLSearchParams();
-      if (params?.diet) qs.set("diet", params.diet);
+      if (params?.dietaryTag) qs.set("dietaryTag", params.dietaryTag);
+      if (params?.skillLevel) qs.set("skillLevel", params.skillLevel);
       if (params?.search) qs.set("search", params.search);
       const query = qs.toString();
       return request<unknown[]>(`/api/recipes${query ? `?${query}` : ""}`);
