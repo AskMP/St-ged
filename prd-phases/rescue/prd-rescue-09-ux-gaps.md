@@ -292,7 +292,7 @@ implementation:
 
 ---
 
-### Task 6: Add seed recipes for testing `[BD:STG-325]`
+### Task 6: Add seed recipes for testing `[BD:stg-1at]` ✓
 
 - **Type**: task
 - **Priority**: P2

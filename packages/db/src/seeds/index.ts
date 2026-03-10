@@ -2,6 +2,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "../schema";
 import { SEED } from "./fixtures";
+import { seedStarterRecipes } from "./recipes";
 
 const pool = new Pool({
   connectionString:
@@ -171,6 +172,9 @@ export async function seedDatabase() {
       },
     ])
     .onConflictDoNothing();
+
+  // Seed 6 starter recipes
+  await seedStarterRecipes(db as any);
 
   console.log("Seed complete.");
   await pool.end();
