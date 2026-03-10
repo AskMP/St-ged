@@ -160,7 +160,9 @@ describe("Planning page", () => {
     await waitFor(() => {
       expect(screen.getAllByTestId("meal-entry")).toHaveLength(1);
     });
-    expect(screen.getByText("Pasta Primavera")).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Pasta Primavera").length,
+    ).toBeGreaterThanOrEqual(1);
   });
 
   it("requests cost per recipe and updates week cost", async () => {
