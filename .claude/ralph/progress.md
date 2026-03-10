@@ -1,3 +1,39 @@
+## Rescue Iteration 11 -- rescue-09 Complete: All 8 tasks done
+
+- **Status**: Complete
+- **Branch**: stg-unj/rescue-00-schema
+- **Commits**: c18f947 (task5), 5e5a6af (task6), 3a61939 (task7), 87982c8 (task8)
+- **Summary**: All UX gaps closed. Task 5: api-client.recipes.list() updated to use dietaryTag+skillLevel params matching server-side filtering. Task 6: 6 starter recipes seeded (2 beginner, 2 intermediate, 1 advanced, 1 vegan) with idempotent fixed UUIDs. Task 7: 7 new unit tests (auth-persist: 4, autocomplete: 3, filter: 5 API). Task 8: CORRECTION_LOG updated (6 entries), rescue manifest 9/9 complete.
+- **Test baseline**: 96 API tests pass (5 new filter tests), 89/90 web tests pass (1 pre-existing planning-routes failure unrelated).
+- **ALL RESCUE PRDs COMPLETE**: 9/9 rescue PRDs done. Foundation rebuilt, auth fixed, services persisted, UX rebuilt, multi-household, UX gaps all addressed.
+- **Time**: 2026-03-09
+
+---
+
+## SESSION BREAK -- 2026-03-09 (context limit reached)
+
+- **Status**: Paused. Resume with `/ralph prd-phases/rescue/rescue-manifest.md`
+- **Next PRD**: rescue-09 (UX Gaps) -- `prd-phases/rescue/prd-rescue-09-ux-gaps.md`
+- **Manifest state**: 8/9 complete; rescue-09 status: pending
+- **Branch**: stg-unj/rescue-00-schema (all rescue-07 + rescue-08 commits on this branch)
+- **rescue-09 tasks** (all pending, none started):
+  - Task 1: Zustand persist middleware on useAuthStore [BD:STG-320]
+  - Task 2: Recipe search + dietary auto-filter on Recipes page [BD:STG-321]
+  - Task 3: Planning add-meal autocomplete from recipe library [BD:STG-322]
+  - Task 4: Offline banner via navigator.onLine (replace socket-based indicator) [BD:STG-323]
+  - Task 5: Server-side dietary + skill filter on GET /api/recipes [BD:STG-324]
+  - Task 6: Seed 6 starter recipes (idempotent) [BD:STG-325]
+  - Task 7: Unit tests for auth persist + recipe filter + planning autocomplete [BD:STG-326]
+  - Task 8: CORRECTION_LOG.md + manifest update [BD:STG-327]
+- **Known gotchas from rescue-08**:
+  - `packages/types/dist` is gitignored -- after adding new types run `npx tsc -b packages/types` before web type-check
+  - PRD-referenced BD task IDs (STG-320 etc.) are phantom -- create real bd tasks on the fly
+  - `joinHousehold` currently always overwrites `users.householdId`; this is intentional current behavior
+  - pre-existing planning-routes unit test failure (1 test) is unrelated to rescue work -- do not fix unless it blocks
+- **Test baseline**: 91 API tests pass, 82/83 web unit tests pass
+
+---
+
 ## Rescue Iteration 10 -- rescue-08 Complete: All 9 tasks done
 
 - **Status**: Complete
