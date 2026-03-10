@@ -326,7 +326,7 @@ implementation:
 
 ---
 
-### Task 7: Add unit tests for new UX features `[BD:STG-326]`
+### Task 7: Add unit tests for new UX features `[BD:stg-ysp]` ✓
 
 - **Type**: task
 - **Do**:

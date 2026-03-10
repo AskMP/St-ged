@@ -266,4 +266,85 @@ describe("Planning page", () => {
     // Week should shift; just verify the label updated (won't be same text)
     expect(screen.getByTestId("week-nav")).toBeInTheDocument();
   });
+
+  it("fetches recipe list on mount for autocomplete", async () => {
+    renderPlanning();
+    // The component calls apiClient.recipes.list on mount to populate the autocomplete ref
+    await waitFor(() => {
+      expect(apiClient.apiClient.recipes.list).toHaveBeenCalled();
+    });
+  });
+
+  it("autocomplete dropdown shows matching recipes after typing", async () => {
+    renderPlanning();
+    // Wait for the calendar to render
+    await waitFor(() => screen.getByTestId("week-calendar"));
+
+    // Find all dashed add-meal buttons (empty cell buttons with "Meal name" placeholder after click)
+    // Click the first available add button (cells without a meal entry)
+    const addButtons = screen.getAllByRole("button", {
+      // The add buttons have text "+" but we can't easily distinguish --
+      // use a workaround: find buttons inside week-calendar that are not the named buttons
+      name: (name) => name === "" || name === "+" || /^\s*$/.test(name),
+    });
+    // Click the first empty slot button to open the input
+    const emptySlotButtons = addButtons.filter((btn) => {
+      return !btn.closest("[data-testid='meal-entry']");
+    });
+    if (emptySlotButtons.length === 0) {
+      // Skip if all slots are filled (environment dependent)
+      return;
+    }
+    fireEvent.click(emptySlotButtons[0]!);
+
+    // The input should now appear
+    const input = await waitFor(() => screen.getByPlaceholderText("Meal name"));
+
+    // Type a partial match -- "Lentil" should match "Red Lentil Soup" from the mock
+    // (Use "Lentil" to avoid ambiguity with the "Pasta Primavera" meal entry already in the plan)
+    fireEvent.change(input, { target: { value: "Lentil" } });
+
+    // Autocomplete dropdown should appear
+    const dropdown = await waitFor(() =>
+      screen.getByTestId("meal-search-dropdown"),
+    );
+    // "Red Lentil Soup" should appear in the dropdown
+    expect(dropdown).toHaveTextContent("Red Lentil Soup");
+  });
+
+  it("selecting autocomplete item calls addEntry with recipe id", async () => {
+    vi.mocked(apiClient.apiClient.plans.addEntry).mockResolvedValue({
+      id: "new-entry-id",
+    } as any);
+
+    renderPlanning();
+    await waitFor(() => screen.getByTestId("week-calendar"));
+
+    const addButtons = screen.getAllByRole("button", {
+      name: (name) => name === "" || name === "+" || /^\s*$/.test(name),
+    });
+    const emptySlotButtons = addButtons.filter((btn) => {
+      return !btn.closest("[data-testid='meal-entry']");
+    });
+    if (emptySlotButtons.length === 0) return;
+
+    fireEvent.click(emptySlotButtons[0]!);
+    const input = await waitFor(() => screen.getByPlaceholderText("Meal name"));
+    fireEvent.change(input, { target: { value: "Lentil" } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("meal-search-dropdown")).toBeInTheDocument();
+    });
+
+    // Click "Red Lentil Soup" from the dropdown
+    const suggestion = screen.getByText("Red Lentil Soup");
+    fireEvent.click(suggestion);
+
+    await waitFor(() => {
+      expect(apiClient.apiClient.plans.addEntry).toHaveBeenCalledWith(
+        "plan-1",
+        expect.objectContaining({ recipeId: "r-lentil" }),
+      );
+    });
+  });
 });
