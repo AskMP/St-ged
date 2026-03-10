@@ -278,3 +278,93 @@ export async function mockHouseholdsApi(page: Page) {
     route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
   });
 }
+
+// ---- High-level flow helpers ----
+
+/**
+ * Login as an existing user via the login form.
+ * Requires a live API at process.env.API_URL (or localhost:3000).
+ * MUST only be used in tests gated on API_URL env var.
+ */
+export async function loginAs(
+  page: Page,
+  email: string,
+  password: string,
+): Promise<void> {
+  await page.goto("/login");
+  await page.locator("input[type='email'], #email").fill(email);
+  await page.locator("input[type='password'], #password").fill(password);
+  await page.getByRole("button", { name: /sign in|log in/i }).click();
+  await page.waitForURL(/\/planning/, { timeout: 10_000 });
+}
+
+/**
+ * Sign up a new user and log in. Generates a unique email if not provided.
+ * Requires a live API at process.env.API_URL (or localhost:3000).
+ * MUST only be used in tests gated on API_URL env var.
+ */
+export async function signupAndLogin(
+  page: Page,
+  email?: string,
+  password?: string,
+): Promise<{ email: string; password: string }> {
+  const e = email ?? `e2e-${Date.now()}@staged.test`;
+  const p = password ?? "testpass123";
+  const apiBase = process.env.API_URL ?? "http://localhost:3000";
+  await page.request.post(`${apiBase}/api/auth/signup`, {
+    data: { email: e, password: p, displayName: "E2E User" },
+  });
+  await loginAs(page, e, p);
+  return { email: e, password: p };
+}
+
+/**
+ * Create a household via the API (requires live API).
+ * Returns the household ID.
+ */
+export async function createHousehold(
+  page: Page,
+  name: string,
+): Promise<string> {
+  const apiBase = process.env.API_URL ?? "http://localhost:3000";
+  const res = await page.request.post(`${apiBase}/api/households`, {
+    data: { name },
+  });
+  const body = (await res.json()) as { id: string };
+  return body.id;
+}
+
+/**
+ * Skip onboarding by injecting completed state into localStorage.
+ * Must be called BEFORE page.goto().
+ */
+export async function skipOnboarding(
+  page: Page,
+  opts: {
+    skillLevel?: string;
+    householdSize?: number;
+    householdId?: string;
+  } = {},
+): Promise<void> {
+  await injectOnboardingComplete(page, opts);
+}
+
+/**
+ * Set the browser context (all pages) to offline mode.
+ * Also dispatches the 'offline' event on the page.
+ */
+export async function goOffline(page: Page): Promise<void> {
+  const context = page.context();
+  await context.setOffline(true);
+  await page.evaluate(() => window.dispatchEvent(new Event("offline")));
+}
+
+/**
+ * Restore the browser context to online mode.
+ * Also dispatches the 'online' event on the page.
+ */
+export async function goOnline(page: Page): Promise<void> {
+  const context = page.context();
+  await context.setOffline(false);
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+}
